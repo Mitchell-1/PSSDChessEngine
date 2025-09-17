@@ -1,0 +1,1 @@
+A makefile has been included, to compile and run the code simply type "Make"
