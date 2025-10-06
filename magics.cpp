@@ -28,7 +28,7 @@ int getBitCount(uint64_t board){
     return count;
 }
 
-
+// Pre-generated magic numbers for Orthogonal sliding pieces
 uint64_t rookMagics[64] ={
 0x80001060854000ULL, 
 0x4840400010002000ULL,
@@ -96,6 +96,7 @@ uint64_t rookMagics[64] ={
 0x410008024010042ULL
 };
 uint64_t RookAttackMasks[64][4096];
+// Pre-generated magic numbers for Diagonal sliding pieces
 uint64_t bishopMagics[64] = {
 0x4011001010101ULL, 
 0x10901210484080ULL, 
@@ -164,6 +165,7 @@ uint64_t bishopMagics[64] = {
 };
 uint64_t bishopAttackMasks[64][512];
 
+// Generates the unblocked magic attack mask for Bishops on every square.
 uint64_t * genBishopMask() {
     static uint64_t attackMasks[64] = {0};
     uint64_t one = 1;
@@ -190,6 +192,7 @@ uint64_t * genBishopMask() {
 }
 uint64_t* bishopMasks =  genBishopMask();
 
+// Generates the unblocked magic attack mask for Rooks on every square.
 uint64_t * genRookMask() {
     static uint64_t attackMasks[64] = {0};
     uint64_t one = 1;
@@ -217,6 +220,9 @@ uint64_t * genRookMask() {
 }
 uint64_t * rookMasks = genRookMask();
 
+
+// Generates the unblocked attack mask for Queens by combining
+// the Rook and Bishop attack masks.
 uint64_t * genQueenMask(uint64_t * rook, uint64_t * bishop){
     static uint64_t attackMasks[64] = {0};
     for (int square = 0; square < 64; square ++){
@@ -225,8 +231,13 @@ uint64_t * genQueenMask(uint64_t * rook, uint64_t * bishop){
     return attackMasks;
 }
 
+// Generates a board of potential blockers for a given attack mask.
+// The index determines which combination of blockers to return 
+// with a maximum blocker count of numBits.
+
+// e.g with an attack mask of 10-10-10 (bits 1, 3 and 5 are potential blockers)
+// and an index of 6 (binary 110) with numBits = 3 the function will return 10-10-00
 uint64_t set_occupancy(int index, int numBits, uint64_t attackMask){
-    uint64_t tempMask = attackMask;
     uint64_t occupancy = 0;
     for (int count = 0; count < numBits; count++){
         int square = bitboardHelpers::getLSB(attackMask);
@@ -236,29 +247,29 @@ uint64_t set_occupancy(int index, int numBits, uint64_t attackMask){
     }
     return occupancy;
 }
-
+// Uses a randomised brute-force approach to find a magic number
+// for a given square and piece type (rook or bishop).
 uint64_t findMagicNum(int square, int relevantBits, int piece){
 
-    int occupancyIndex = 1 << relevantBits;
+    int occupancyIndex = 1 << relevantBits; 
     uint64_t occupancies[4096];
     uint64_t attacks[4096];
     uint64_t usedAttacks[4096];
     uint64_t attackMask;
-    if (piece == 1){ // bishop
+    if (piece == 1){ // Bishop
         attackMask = bishopMasks[square];
         
-    } else if (piece == 3) { //rook
+    } else if (piece == 3) { //Rook
         attackMask = rookMasks[square];
     } else {
         exit(0);
     }
-
-    
     
     uint64_t one = 1;
     
+    // Index will iterate through a all possible bit combinations
+    // and map each occupancy board to the correct attack board.
     for (int index = 0; index < occupancyIndex; index ++){
-        
         occupancies[index] = set_occupancy(index, relevantBits, attackMask);
         if (piece == 1){ // bishop
             attacks[index] = genBishopAttacks(square, occupancies[index]);
@@ -267,29 +278,37 @@ uint64_t findMagicNum(int square, int relevantBits, int piece){
         }
         
     }
-        
-        for (int randomCount = 0; randomCount < 100000000000; randomCount++){
-            uint64_t magicNum = getMagicNumCandidate();
-            
-            if (getBitCount((attackMask * magicNum) & 0xFF00000000000000) < 6) continue;
-            memset(usedAttacks, uint64_t(0), sizeof(usedAttacks));
-            int index, fail;
-            for (index = 0, fail=0; !fail && index < occupancyIndex; index ++){
-                int magicIndex = int((occupancies[index] * magicNum) >> (64-relevantBits));
-                if (usedAttacks[magicIndex] == uint64_t(0)){
-                        usedAttacks[magicIndex] = attacks[index];
-                    } else if (usedAttacks[magicIndex] != attacks[index]) {
-                        fail = 1;
-                        break;
-                    }
+    
+    // Checks up to 100 billion random numbers to find a magic number.
+    // A magic number is found when the calculated 
+    // "magicIndex" uniquely maps all possible attacks.
+    for (int randomCount = 0; randomCount < 100000000000; randomCount++){
+        uint64_t magicNum = getMagicNumCandidate();
 
-                }
-            if (!fail){
-                return magicNum;
+        // Sets an arbitrary limit to the size of the resulting index
+        // for speed and storage limitations.
+        // Eliminates bad magic numbers quickly which saves time on checking all collisions.
+        if (getBitCount((attackMask * magicNum) & 0xFF00000000000000) < 6) continue;
+
+        // Resets used attacks and tests all attacks for collisions.
+        memset(usedAttacks, uint64_t(0), sizeof(usedAttacks));
+        int index, fail;
+        for (index = 0, fail=0; !fail && index < occupancyIndex; index ++){
+            int magicIndex = int((occupancies[index] * magicNum) >> (64-relevantBits));
+            if (usedAttacks[magicIndex] == uint64_t(0)){
+                    usedAttacks[magicIndex] = attacks[index];
+            } else if (usedAttacks[magicIndex] != attacks[index]) {
+                fail = 1;
+                break;
             }
+
+            }
+        if (!fail){
+            return magicNum;
         }
-        printf("Magic Number fails!");
-        return uint64_t(0);
+    }
+    printf("Magic Number fails!");
+    return uint64_t(0);
         
 
 }
@@ -309,7 +328,8 @@ void initMagicNumbers(){
     }   
 }
 
-
+// Generates the oficial attack board for a Bishop
+// for a given square and blocker board.
 uint64_t genBishopAttacks(int square, uint64_t blockers){
     
     uint64_t attackMask = 0;
@@ -336,6 +356,8 @@ uint64_t genBishopAttacks(int square, uint64_t blockers){
     return attackMask;
 }
 
+// Generates the oficial attack board for a Rook
+// for a given square and blocker board.
 uint64_t genRookAttacks(int square, uint64_t blockers){
     uint64_t attackMask = 0;
     uint64_t tempMask = 0;
@@ -365,17 +387,19 @@ uint64_t genRookAttacks(int square, uint64_t blockers){
 }
 
 
-
+// Uses the generated magic numbers to return the official
+// attack board for a Bishop 
 uint64_t get_bishop(int square, uint64_t occupancy){
     occupancy &= bishopMasks[square];
-    occupancy = occupancy * bishopMagics[square];
-    occupancy >>= (64-bishopBitCounts[square]);
+    occupancy = occupancy * bishopMagics[square] >> (64-bishopBitCounts[square]); // Occupancy now becomes the magic index but retains name for simplicity and speed.
     return bishopAttackMasks[square][occupancy];
 }
+
+// Uses the generated magic numbers to return the official
+// attack board for a Rook 
 uint64_t get_rook(int square, uint64_t occupancy){
     occupancy &= rookMasks[square];
-    occupancy = occupancy * rookMagics[square];
-    occupancy >>= (64-rookBitCounts[square]);
+    occupancy = occupancy * rookMagics[square] >> (64-rookBitCounts[square]); // Occupancy now becomes the magic index but retains name for simplicity and speed.
     return RookAttackMasks[square][occupancy];
 }
 

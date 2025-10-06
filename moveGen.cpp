@@ -1,5 +1,7 @@
 #include "moveGen.h"
 
+// Template wrapper allows for efficient filtering of move generation allowing for 
+// specific move types to be generated without overhead of checking types.
 template<genType Type>
 Move * generateWhitePawnMoves(const Game& position, Move* moveList) {
     Bitboard Pawns = position.whiteBoards[0];
@@ -8,10 +10,13 @@ Move * generateWhitePawnMoves(const Game& position, Move* moveList) {
     Bitboard Rank2Pawns = Pawns & myEngine::Rank2BB;
     Square from;
     Square to;
+
+    // Generates all non-capturing pawn moves.
     if (Type != CAPTURES) {
         Bitboard blockers = position.mainBoard >> 8;
         bitboardHelpers::popBit(Pawns, blockers);
         Rank2Pawns = Pawns & myEngine::Rank2BB;
+        // Generates single push Pawn moves
         while (Pawns != 0){
             from = bitboardHelpers::getLSB(Pawns);
             to = from + 8;
@@ -24,6 +29,7 @@ Move * generateWhitePawnMoves(const Game& position, Move* moveList) {
                 *moveList ++ = Move(from, to, 0, 0, 0, 7, 0, 0);
             }
         }
+        // Generates double push Pawn moves.
         blockers |= position.mainBoard >> 16;
         bitboardHelpers::popBit(Rank2Pawns, blockers);
         while (Rank2Pawns) {
@@ -34,6 +40,7 @@ Move * generateWhitePawnMoves(const Game& position, Move* moveList) {
         }
         
     }
+    // Generates all capturing pawn moves.
     if (Type == CAPTURES || Type == LEGAL) {
         while (PawnsNotA != 0)
         {
@@ -78,13 +85,12 @@ Move * generateBlackPawnMoves(const Game& position, Move* moveList) {
     Bitboard Rank7Pawns = Pawns & myEngine::Rank7BB;
     Square from;
     Square to;
+    // Generates all non-capturing pawn moves.
     if (Type != CAPTURES) {
         Bitboard blockers = position.mainBoard << 8;
-        //myEngine::printBitBoard(Pawns);
-        //myEngine::printBitBoard(blockers);
         bitboardHelpers::popBit(Pawns, blockers);
-        //myEngine::printBitBoard(Pawns);
         Rank7Pawns = Pawns & myEngine::Rank7BB;
+        // Generates single push Pawn moves
         while (Pawns != 0){
             from = bitboardHelpers::getLSB(Pawns);
             to = from - 8;
@@ -96,6 +102,7 @@ Move * generateBlackPawnMoves(const Game& position, Move* moveList) {
                 *moveList ++ = Move(from, to, 0, 0, 0, 7, 1, 0);
             }
         }
+        // Generates double push Pawn moves.
         blockers |= position.mainBoard << 16;
         bitboardHelpers::popBit(Rank7Pawns, blockers);
         while (Rank7Pawns) {
@@ -106,6 +113,8 @@ Move * generateBlackPawnMoves(const Game& position, Move* moveList) {
         }
         
     }
+
+    // Generates all capturing pawn moves.
     if (Type == CAPTURES || Type == LEGAL) {
         while (PawnsNotA != 0)
         {
@@ -358,7 +367,7 @@ Move * generateKingMoves(const Game& position, Move* moveList) {
         if (canQueenCastle) {
 
             if (!(queenCastle & enemyAttacks) && 
-               (((queenCastle | extraSquare) & position.mainBoard) == king2)) {
+                (((queenCastle | extraSquare) & position.mainBoard) == king2)) {
                 *moveList++ = Move(lsb, lsb-2, 0, 3, 5, 7, position.turn, 0);
             }
         }

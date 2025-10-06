@@ -5,6 +5,7 @@
 #include "moveList.h"
 #include <chrono>
 
+//Runs a perft test to return the number of possible nodes at a given depth.
 template<bool root>
 uint64_t perft(Game& position, int depth) {
     auto start = std::chrono::high_resolution_clock::now();

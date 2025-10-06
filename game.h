@@ -9,6 +9,8 @@
 #include <vector>
 #include <bitset>
 
+// Game class to handle all interactions with the game state
+// and board representations.
 class Game {    
     public:
         Bitboard whiteBoards[7] = {0, 0, 0, 0, 0, 0, 0};

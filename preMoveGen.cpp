@@ -1,6 +1,6 @@
 #include "preMoveGen.h"
 
-
+//Generates the Knight attack masks for every square on the board.
 Bitboard * genKnightAttackMask() {
     static Bitboard knightAttackMask[64];
     Bitboard attackMask = 0;
@@ -28,7 +28,7 @@ Bitboard * genKnightAttackMask() {
     return knightAttackMask;
 }
 
-
+// Loads all Bishop attack masks into the magic Bishop attack table.
 void genPossibleBishopMoves(){
     for (int square = 0; square< 64; square ++){
         uint64_t attackMask = bishopMasks[square];
@@ -41,7 +41,7 @@ void genPossibleBishopMoves(){
         }
     }
 }
-
+// Loads all Rook attack masks into the magic Rook attack table.
 void genPossibleRookMoves(){
     for (int square = 0; square< 64; square ++){
         uint64_t attackMask = rookMasks[square];
@@ -49,13 +49,14 @@ void genPossibleRookMoves(){
         int occupancyIndex = (1 << relevantBits);
         for (int index = 0; index < occupancyIndex; index ++){
             uint64_t occupancy = set_occupancy(index, relevantBits, attackMask);
-            int magicIndex = occupancy * rookMagics[square] >> (64-relevantBits);
+            int magicIndex = (occupancy * rookMagics[square]) >> (64-relevantBits);
             uint64_t attacks = genRookAttacks(square, occupancy);
             RookAttackMasks[square][magicIndex] = genRookAttacks(square, occupancy);
         }
     }
 }
 
+// Generates the King attack mask for every square on the board.
 Bitboard * genPossibleKingMoves() {
     static Bitboard kingAttackMask[64];
     Bitboard attackMask = 0;

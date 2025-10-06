@@ -1,20 +1,21 @@
 #ifndef move_h
 #define move_h
 #include <iostream>
+#include <cstdint>
 
 using Bitboard = uint64_t;
 using Square = int;
 
-// bit 0-5 is square from
-// bit 6-11 is square to
-// bit 12-13 is promotion type
-// bit 14-15 is special flag 01 = promotion, *10 = king castle, 11 = queen castle
-// bit 16-18 is for piece moved
-// bit 19-21 is for piece captured
-// bit 22 is for move colour
-// bit 23 is for passantable move
+// Bit 0-5 is square from
+// Bit 6-11 is square to
+// Bit 12-13 is promotion type
+// Bit 14-15 is special flag 01 = promotion, *10 = king castle, 11 = queen castle
+// Bit 16-18 is for piece moved
+// Bit 19-21 is for piece captured
+// Bit 22 is for move colour
+// Bit 23 is for passantable move
 
-// bit 24-27 is score for breaking castle memory
+// Bit 24-27 is score for breaking castle memory
 // 0001 broke black king castle
 // 0010 broke black queen castle
 // 0100 broke white king castle

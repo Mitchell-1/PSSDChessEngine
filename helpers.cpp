@@ -1,8 +1,12 @@
 #include "helpers.h"
+
+
 Bitboard myEngine::intToBitBoard(int square){
     return ((uint64_t (1)) << square);
 }
 
+// Takes a standard square notatin (e.g. e4) and converts
+// it into a bitboard with only that bit set.
 Bitboard myEngine::strToBitBoard(char file, char rank) {
     char files1[9] = "abcdefgh";
     int fileNum = std::string(files1).find(file);
@@ -35,8 +39,6 @@ void myEngine::printBitBoard(Bitboard bitboard){
 
 void myEngine::printMove(Move move){
     const char * colour = move.colour() ? "Black  " : "White  ";
-    //printf("%s%s: ", STC[move.fromSquare()], STC[move.toSquare()], move.promotion());
-    //printf("\n\n");
     switch (move.type())
     {
     case 0:

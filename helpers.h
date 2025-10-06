@@ -3,6 +3,8 @@
 
 #include <iostream>
 #include <vector>
+#include <cstdint>
+
 #include "move.h"
 using Bitboard = uint64_t;
 using Square = int;
@@ -66,6 +68,7 @@ namespace myEngine {
         if (in == 'Q') return Q;
         if (in == 'K') return K;
         if (in == '/') return slash;
+        return slash;
     }
     
     enum Direction : int {

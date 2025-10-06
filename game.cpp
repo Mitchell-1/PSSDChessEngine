@@ -1,5 +1,9 @@
 #include "game.h"
 
+
+// Converts a standard notation FEN string into bitboards.
+// After reading pieces it reads in all necessary variables 
+// for the game state to continue from the position.
 void Game::fenToBitBoards(std::string fenPosition) {
     uint64_t square = 56;
     auto next = fenPosition[0];
@@ -106,6 +110,7 @@ void Game::fenToBitBoards(std::string fenPosition) {
     this->genAttacks();
 }
 
+//compiles any changes to the individual boards into the total board.
 void Game::updateMainBoards(){
 
     whiteBoard = ((whiteBoards[0] | whiteBoards[1] | whiteBoards[2] | 
@@ -115,6 +120,8 @@ void Game::updateMainBoards(){
     mainBoard = ((whiteBoard | blackBoard));
 }
 
+//returns the piece-index value of the occupied square as specified by "square".
+//checks based on the colour given (0 = white, 1 = black).
 int Game::getPieceBySquare(Bitboard square, int colour) const{
     if (colour == 0){
         for (int i=0; i<7; i++){
@@ -129,9 +136,12 @@ int Game::getPieceBySquare(Bitboard square, int colour) const{
             }
         }
     }
+    return -1;
 }
 
 using namespace bitboardHelpers;
+
+// Updates the attack bitboards for both sides after a move has been made.
 void Game::updateAttacks(Move move) {
     int type = move.type();
     int to = move.toSquare();
@@ -147,7 +157,10 @@ void Game::updateAttacks(Move move) {
     if (this->debug) {
         //printBitBoard(whiteAttack);
     }
+    // if move is made by black
     if (move.colour()) {
+        // If move contains a capture remove the captured
+        // piece's attacks from the board.
         if (capture !=7) {
             switch (capture)
             {
@@ -187,6 +200,7 @@ void Game::updateAttacks(Move move) {
             }
         }
         
+        // Update the moving piece's attacks.
         switch (type)
         {
         case 0:
@@ -234,7 +248,49 @@ void Game::updateAttacks(Move move) {
         default:
             break;
         }
-    } else {
+    } else { // move is made by white
+        // If move contains a capture remove the captured
+        // piece's attacks from the board.
+        if (capture !=7) {
+                switch (capture)
+                {
+                case 0:
+                    if (to%8 != 0) {
+                        capturedAttack |= oneBB << (to +7);
+                    }
+                    if (to%8 != 7) {
+                        capturedAttack |= oneBB << (to +9);
+                    }
+                    blackAttacks[0] |= capturedAttack;
+                    blackAttacks[0] ^= capturedAttack;
+                    break;
+                case 1:
+                    capturedAttack = knightAttackMask[to];
+                    blackAttacks[1] |= capturedAttack;
+                    blackAttacks[1] ^= capturedAttack;
+                    break;   
+                case 2:
+                    capturedAttack = get_bishop(to, this->mainBoard);
+                    blackAttacks[2] |= capturedAttack;
+                    blackAttacks[2] ^= capturedAttack;
+                    break;
+                case 3:
+                    capturedAttack = get_rook(to, this->mainBoard);
+                    blackAttacks[3] |= capturedAttack;
+                    blackAttacks[3] ^= capturedAttack;
+                    break; 
+                case 4:
+                    capturedAttack = get_bishop(to, this->mainBoard);
+                    capturedAttack |= get_rook(to, this->mainBoard);
+                    blackAttacks[4] |= capturedAttack;
+                    blackAttacks[4] ^= capturedAttack;
+                    break; 
+                default:
+                    break;
+                }
+        }
+        
+        // Update the moving piece's attacks.
         switch (type)
         {
         case 0:
@@ -282,50 +338,16 @@ void Game::updateAttacks(Move move) {
         default:
             break;
         }
-        if (capture !=7) {
-            switch (capture)
-            {
-            case 0:
-                if (to%8 != 0) {
-                    capturedAttack |= oneBB << (to +7);
-                }
-                if (to%8 != 7) {
-                    capturedAttack |= oneBB << (to +9);
-                }
-                blackAttacks[0] |= capturedAttack;
-                blackAttacks[0] ^= capturedAttack;
-                break;
-            case 1:
-                capturedAttack = knightAttackMask[to];
-                blackAttacks[1] |= capturedAttack;
-                blackAttacks[1] ^= capturedAttack;
-                break;   
-            case 2:
-                capturedAttack = get_bishop(to, this->mainBoard);
-                blackAttacks[2] |= capturedAttack;
-                blackAttacks[2] ^= capturedAttack;
-                break;
-            case 3:
-                capturedAttack = get_rook(to, this->mainBoard);
-                blackAttacks[3] |= capturedAttack;
-                blackAttacks[3] ^= capturedAttack;
-                break; 
-            case 4:
-                capturedAttack = get_bishop(to, this->mainBoard);
-                capturedAttack |= get_rook(to, this->mainBoard);
-                blackAttacks[4] |= capturedAttack;
-                blackAttacks[4] ^= capturedAttack;
-                break; 
-            default:
-                break;
-            }
-        }
     }
+        // Add attacks for pieces on the diagonal that may 
+        // have been unblocked by the move.
         bRay = get_bishop(from, this->mainBoard);
         bRay &= this->mainBoard;
         while (bRay) {
             lsb = bitboardHelpers::getLSB(bRay);
             lsbBB = (oneBB << lsb);
+            // Check if it is a Bishop or Queen that has 
+            // been unblocked and add it to the attacks board.
             if(lsbBB & whiteBoards[2]){
                 whiteAttacks[2] |= get_bishop(lsb, this->mainBoard);
             }
@@ -339,11 +361,15 @@ void Game::updateAttacks(Move move) {
                 blackAttacks[4] |= get_bishop(lsb, this->mainBoard);
             }
         }
+        // Remove attacks for pieces on the diagonal that may
+        // have been blocked by the move.
         bRay = get_bishop(to, this->mainBoard);
         bRay &= this->mainBoard;
         while (bRay) {
             lsb = bitboardHelpers::getLSB(bRay);
             lsbBB = (oneBB << lsb);
+            // Check if it is a Bishop or Queen that has
+            // been Blocked and Remove it to the attacks board.
             if(lsbBB & whiteBoards[2]){
                 popBit(whiteAttacks[2], bishopAttackMasks[to][0]);
                 whiteAttacks[2] |= get_bishop(lsb, this->mainBoard);
@@ -362,12 +388,15 @@ void Game::updateAttacks(Move move) {
             }
         }
 
-
+        // Add attacks for pieces on the rank/file that may
+        // have been unblocked by the move.
         rRay = get_rook(from, this->mainBoard);
         rRay &= this->mainBoard;
         while (rRay) {
             lsb = bitboardHelpers::getLSB(rRay);
             lsbBB = (oneBB << lsb);
+            // Check if it is a Rook or Queen that has 
+            // been unblocked and add it to the attacks board.
             if(lsbBB & whiteBoards[3]){
                 whiteAttacks[3] |= get_rook(lsb, this->mainBoard);
             }
@@ -381,11 +410,15 @@ void Game::updateAttacks(Move move) {
                 blackAttacks[4] |= get_rook(lsb, this->mainBoard);
             }
         }
+        // Remove attacks for pieces on the rank/file that may
+        // have been Blocked by the move.
         rRay = get_rook(to, this->mainBoard);
         rRay &= this->mainBoard;
         while (rRay) {
             lsb = bitboardHelpers::getLSB(rRay);
             lsbBB = (oneBB << lsb);
+            // Check if it is a Rook or Queen that has
+            // been blocked and remove it from the attacks board.
             if(lsbBB & whiteBoards[3]){
                 popBit(whiteAttacks[3], RookAttackMasks[to][0]);
                 whiteAttacks[3] |= get_rook(lsb, this->mainBoard);
@@ -410,12 +443,15 @@ void Game::updateAttacks(Move move) {
         }
     }
 
-
+// Generates all of the attack bitboards for all pieces 
+// of the side to move.
 void Game::genAttacks(){
     this->updateMainBoards();
     Bitboard friendlyBoard, enemyBoard, attackBoard;
     Bitboard * friendlyBoards, *enemyBoards;
     int lsb;
+
+    // Generate Pawn attacks
     attackBoard = 0;
     if (this->turn) {
         friendlyBoard = blackBoard;
@@ -431,8 +467,6 @@ void Game::genAttacks(){
     Bitboard pawnsNotAFile = friendlyBoards[0] & (~myEngine::FileABB);
     Bitboard pawnsNotHFile = friendlyBoards[0] & (~myEngine::FileHBB);
     
-    //myEngine::printBitBoard(pawnsNotHFile);
-    //getchar();
     if (this->turn) {
         attackBoard |= pawnsNotAFile >> 9;
         attackBoard |= pawnsNotHFile >> 7;
@@ -442,9 +476,9 @@ void Game::genAttacks(){
         attackBoard |= pawnsNotAFile << 7;
         whiteAttacks[0] =(attackBoard);
     }     
+
+    // Generate Knight attacks
     attackBoard = 0;
-
-
     Bitboard knightBoard = friendlyBoards[1];
     while (knightBoard) {
         lsb = bitboardHelpers::getLSB(knightBoard);
@@ -456,6 +490,7 @@ void Game::genAttacks(){
         whiteAttacks[1] = attackBoard;
     }
 
+    // Generate Bishop attacks
     attackBoard = 0;
     Bitboard bishopBoard = friendlyBoards[2];
     while (bishopBoard != 0) {
@@ -467,8 +502,9 @@ void Game::genAttacks(){
     } else {
         whiteAttacks[2] = attackBoard;
     }
-    attackBoard = 0;
 
+    // Generate Rook attacks
+    attackBoard = 0;
     Bitboard rookBoard = friendlyBoards[3];
     while (rookBoard != 0) {
         lsb = bitboardHelpers::getLSB(rookBoard);
@@ -479,8 +515,9 @@ void Game::genAttacks(){
     } else {
         whiteAttacks[3] = attackBoard;
     }
-    attackBoard = 0;
 
+    // Generate Queen attacks
+    attackBoard = 0;
     Bitboard queenBoard = friendlyBoards[4];
     while (queenBoard != 0) {
         lsb = bitboardHelpers::getLSB(queenBoard);
@@ -492,8 +529,9 @@ void Game::genAttacks(){
     } else {
         whiteAttacks[4] = attackBoard;
     }
-    attackBoard = 0;
 
+    //Generate King attacks
+    attackBoard = 0;
     Bitboard kingBoard = friendlyBoards[5];
     lsb = bitboardHelpers::getLSB(kingBoard);
     attackBoard |= kingAttackMask[lsb];
@@ -512,8 +550,8 @@ void Game::genAttacks(){
 
 }
 
-
-using namespace bitboardHelpers;
+// Updates the game state and all boards by the given move.
+// Returns true if the move is illegal (puts own king in check).
 bool Game::makeMove(Move& move){
     this->turn = this->turn ? 0 : 1;
     int from, to;
@@ -521,6 +559,8 @@ bool Game::makeMove(Move& move){
     to = move.toSquare();
     
     if (move.colour()) {
+        // Update the black board by the move 
+        // and white board by any capture.
         updateBoard(blackBoards[move.type()], from, to);
         int capture = move.capture();
         if (capture != 7) {
@@ -534,7 +574,7 @@ bool Game::makeMove(Move& move){
             
         }
 
-        //if position is not okay undo changes and return true
+        // If position is illegal undo changes and return true.
         this->genAttacks();
         if (blackBoards[5] & whiteAttack) {
             updateBoard(blackBoards[move.type()], to, from);
@@ -553,7 +593,7 @@ bool Game::makeMove(Move& move){
         
         
 
-        //check if broke castle
+        // Check if the move broke any castling rights
         if (canWhiteKingCastle && capture == 3 && to == 7) {
             canWhiteKingCastle = false;
             move.orData((1<<2), 24); //updating the move to hold memory that it broke castle rights
@@ -561,27 +601,31 @@ bool Game::makeMove(Move& move){
         }
         if (canWhiteQueenCastle && capture == 3 && to == 0) {
             canWhiteQueenCastle = false;
-            move.orData((1<<3), 24);
+            move.orData((1<<3), 24); //updating the move to hold memory that it broke castle rights
         }
         int type = move.type();
         if (canBlackKingCastle){
             if ((type == 5) | ((type == 3) && (from == 63))){
                 canBlackKingCastle = false;
-                move.orData((1), 24);
+                move.orData((1), 24); //updating the move to hold memory that it broke castle rights
             }
                 
         }
         if (canBlackQueenCastle) {
             if (type == 5 | ((type) == 3 && (from == 56))){
                 canBlackQueenCastle = false;
-                move.orData((1<<1), 24);
+                move.orData((1<<1), 24); //updating the move to hold memory that it broke castle rights
             }
         }
 
+        // If move is double pawn push set the en-passant
+        // bit on the black board to signal possible en-passant.
         if (move.passantable()){
             blackBoards[6] = (oneBB << (to+8));
         }
 
+        // If the move is any type of special move (castle or promotion)
+        // check the flag and update the boards accordingly.
         int special = move.special();
         switch (special)
         {
@@ -603,6 +647,8 @@ bool Game::makeMove(Move& move){
             break;
         }
 
+        // Update the en-passant boards for lower depth move generation.
+        // Save the the en-passant board to history for un-making moves.
         if (whiteBoards[6] != 0){
             WhitePHistory.push_back(whiteBoards[6]);
             whiteBoards[6] = (0);
@@ -612,6 +658,8 @@ bool Game::makeMove(Move& move){
         
 
     } else {
+        // Update the White board by the move 
+        // and white board by any capture.
         updateBoard(whiteBoards[move.type()], from, to);
         int capture = move.capture();
         if (capture != 7) {
@@ -625,7 +673,7 @@ bool Game::makeMove(Move& move){
             
         }
 
-        //if position is not okay undo changes and return true
+        // If position is illegal undo changes and return true.
         this->genAttacks();
         if (whiteBoards[5] & blackAttack) {
             updateBoard(whiteBoards[move.type()], to, from);
@@ -646,33 +694,37 @@ bool Game::makeMove(Move& move){
         
         
 
-        //check if broke castle
+        // Check if the move broke any castling rights
         if (canBlackKingCastle && capture == 3 && to == 63) {
             canBlackKingCastle = false;
-            move.orData((1), 24);
+            move.orData((1), 24); //updating the move to hold memory that it broke castle rights
         }
         if (canBlackQueenCastle && capture == 3 && to == 56) {
             canBlackQueenCastle = false;
-            move.orData((1<<1), 24);
+            move.orData((1<<1), 24); //updating the move to hold memory that it broke castle rights
         }
         int type = move.type();
         if (canWhiteKingCastle){
             if (type == 5 | ((type) == 3 && (from == 7))){
                 canWhiteKingCastle = false;
-                move.orData((1<<2), 24);
+                move.orData((1<<2), 24); //updating the move to hold memory that it broke castle rights
             }
         }
         if (canWhiteQueenCastle) {
             if (type == 5 | ((type) == 3 && (from == 0))){
                 canWhiteQueenCastle = false;
-                move.orData((1<<3), 24);
+                move.orData((1<<3), 24); //updating the move to hold memory that it broke castle rights
             }    
         }
 
+        // If move is double pawn push set the en-passant
+        // bit on the white board to signal possible en-passant.
         if (move.passantable()){
             whiteBoards[6] = (oneBB << (to-8));
         }
 
+        // If the move is any type of special move (castle or promotion)
+        // check the flag and update the boards accordingly.
         int special = move.special();
         switch (special)
         {
@@ -694,6 +746,8 @@ bool Game::makeMove(Move& move){
             break;
         }
 
+        // Update the en-passant boards for lower depth move generation.
+        // Save the the en-passant board to history for un-making moves.
         if (blackBoards[6] != 0){
             BlackPHistory.push_back(blackBoards[6]);
             blackBoards[6] = (0);
@@ -702,17 +756,17 @@ bool Game::makeMove(Move& move){
         }
     }
     this->updateMainBoards();
+    // Generates the remaining attacks for the side not to move
+    // then flips the turn back to the side to move.
     this->turn = this->turn ? 0 : 1;
     this->genAttacks();
     this->turn = this->turn ? 0 : 1;
-    //if (whiteBoards[0] & Rank6BB || whiteBoards[6] & ~Rank3BB) {
-    //    printMove(move);
-    //    //printBitBoard(whiteBoards[6]);
-    //    getchar();
-    //}
     return false;
 }
 
+
+// Undoes the given move and restores the game 
+// state to before the move was made. 
 void Game::unMakeMove(Move& move){
     this->turn = this->turn ? 0 : 1;
     int from, to;
@@ -795,11 +849,7 @@ void Game::unMakeMove(Move& move){
 
     Bitboard temp = move.brokeCastle();
     while (temp != 0){
-        //printf("start - ");
-        //printMove(move);
-        //std::cout << std::bitset<8>(temp) << std::endl;
         int LSB = getLSB(temp);
-        //printf("LSB: %d\n", LSB);
         switch (LSB)
         {
         case 0:

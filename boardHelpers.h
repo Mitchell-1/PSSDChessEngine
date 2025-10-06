@@ -15,6 +15,9 @@ const int index64[64] = {
 
 const uint64_t debruijn64 = uint64_t(0x03f79d71b4cb0a89);
 
+
+// Assortment of helper functions for manipulating bitboards
+// can be used with either a square (int) or a bitboard with only one bit set (Bitboard).
 namespace bitboardHelpers {
     constexpr void popBit(Bitboard& board, Square square) {
         Bitboard squareBB = oneBB << square;
@@ -46,7 +49,8 @@ namespace bitboardHelpers {
         board ^= bit;
         board |= bit;
     }
-
+    // Returns the index (0-63) of the least significant bit and pops it from the bitboard
+    // Uses De Bruijn sequence to do so in constant time, avoiding looping over the board.
     constexpr Square getLSB(Bitboard& board) {
         if (board != 0){
             Square lsb =  (index64[((board ^ (board-1)) * debruijn64) >> 58]);
