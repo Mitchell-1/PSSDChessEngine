@@ -125,7 +125,7 @@ namespace myEngine {
     void printBitBoard(Bitboard);
 
     void printMove(Move);
-    
+    int squareToInt(std::string square);
     }
 
 

@@ -35,7 +35,13 @@ void myEngine::printBitBoard(Bitboard bitboard){
 }
 
 
-
+int myEngine::squareToInt(std::string square){
+    std::string files1 = "abcdefgh";
+    char file = square[0];
+    int fileNum = files1.find(file);
+    int rank = square[1] - '0' - 1;
+    return rank*8 + fileNum;
+}
 
 void myEngine::printMove(Move move){
     const char * colour = move.colour() ? "Black  " : "White  ";

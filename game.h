@@ -39,6 +39,7 @@ class Game {
         bool makeMove(Move& move);
         void unMakeMove(Move& move);
         bool isPosOk(Move& move);
+        void recieveMove(std::string moveStr);
         Bitboard whiteKingCastle = 112;
         Bitboard WhiteKingRook = 160;
         bool canWhiteKingCastle = false;

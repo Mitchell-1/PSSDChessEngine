@@ -1012,3 +1012,76 @@ bool Game::isPosOk(Move& move){
     }
     return flag;
 }
+
+void Game::recieveMove(std::string moveStr){
+    std::string strInitsquare = moveStr.substr(0, 2);
+    std::string strTargetSquare = moveStr.substr(2, 4);
+    Square initSquare = squareToInt(strInitsquare);
+    Square targetSquare = squareToInt(strTargetSquare);
+    uint8_t type = 0;
+    uint8_t colour = 0;
+    uint8_t capture = 8;
+    bool check = 0;
+    uint8_t promotion = 0;
+    bool passantable = 0;
+    int castle = 0;
+    if (whiteBoard & (uint64_t(1) << initSquare)){
+        colour = 0;
+        type = getPieceBySquare(uint64_t(1) << initSquare, 0);
+        if (type == 0){
+            if (targetSquare/8 == 7) {
+                promotion = uint8_t(moveStr[4] - '0');
+            }
+            if (targetSquare - initSquare == 16) {
+                passantable = true;
+            }
+        }
+        if (type == 5) {
+            int diff = targetSquare - initSquare;
+            if (diff == -2) {
+                castle = 2;
+            } else if (diff == 2) {
+                castle = 1;
+            }
+        }
+        if ((blackBoard & (uint64_t(1) << targetSquare)) | (blackBoards[6] & (uint64_t(1) << targetSquare)) ){
+            capture = getPieceBySquare((uint64_t(1) << targetSquare), 1);
+        }
+    } else if (blackBoard & (uint64_t(1) << initSquare)){
+        colour = 1;
+        type = getPieceBySquare(uint64_t(1) << initSquare, 1);
+        if (type == 0){
+            if (targetSquare/8 == 0) {
+                promotion = uint8_t(moveStr[4] - '0');
+            }
+            if (initSquare - targetSquare == 16) {
+                passantable = true;
+            }
+        }
+        if (type == 5) {
+            int diff = targetSquare - initSquare;
+            if (diff == -2) {
+                castle = 2;
+            } else if (diff == 2) {
+                castle = 1;
+            }
+        }
+        if ((whiteBoard & (uint64_t(1) << targetSquare)) | (whiteBoards[6] & (uint64_t(1) << targetSquare))){
+            capture = getPieceBySquare((uint64_t(1) << targetSquare), 0);
+        }
+    } else {
+        printf("Input a valid move\n");
+        return;
+    }
+    uint8_t flag = 0;
+    if (promotion != 0) {
+        flag = 1;
+    } else if (castle != 0) {
+        flag = castle + 1;
+    }
+    Move newMove = Move(initSquare, targetSquare, promotion, flag, type, capture, colour, passantable);
+    if (makeMove(newMove)){
+        printf("Input a valid move\n");
+        return;
+    }
+}
