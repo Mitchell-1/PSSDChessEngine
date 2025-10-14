@@ -10,11 +10,23 @@
 template <genType Type>
 struct MoveList {
     private:
+        Move tempMoveList[256], *tempLast;
         Move moveList[256], *last;
     public:
         MoveList();
-        explicit MoveList(const Game& position) : 
-            last(generate<Type>(position, moveList)) {}
+        explicit MoveList(Game& position) : 
+            tempLast(generate<Type>(position, tempMoveList)) {
+                Move* move;
+                int counter = 0;
+                for (move = tempMoveList; move != tempLast; ++move) {
+                    if (position.makeMove(*move)){
+                        continue;
+                    }
+                    moveList[counter++] = *move;
+                    position.unMakeMove(*move);
+                }
+                last = &moveList[counter];
+            }
 
         MoveList(Move MoveList[]);
         const Move* begin() const {return moveList;}

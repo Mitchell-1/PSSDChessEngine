@@ -31,7 +31,9 @@ void UCI_Listen(Game & game) {
             }
 
             if (input.find("perft") != std::string::npos) {
-                std::cout << "total nodes: " <<  perft<true>(game, depth) << std::endl;
+                depth = std::stoi(input.substr(input.find("perft") + 6));
+                printf("Format:\nColour   Piece   Start    End  Capture Promotion En-Passantable\nNodes\n\n");
+                uint64_t nodes = perft<true>(game, depth);
                 continue;
             }
 

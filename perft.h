@@ -13,15 +13,11 @@ uint64_t perft(Game& position, int depth) {
     const bool leaf = (depth == 2);
     for (Move m: MoveList<LEGAL>(position)) {
         if (root && depth <= 1) {
-            if (position.makeMove(m)){
-                continue;
-            }
+            position.makeMove(m);
             count = 1, nodes++;
             position.unMakeMove(m);
         } else {
-            if (position.makeMove(m)){
-                continue;
-            }
+            position.makeMove(m);
             if (leaf) {
                 count = 0;
                 for (Move m2: MoveList<LEGAL>(position)) {
@@ -30,6 +26,7 @@ uint64_t perft(Game& position, int depth) {
                         continue;
                     }
                     nodes++;
+                    count++;
                 }  
             } else {
                 count = perft<false>(position, depth-1);
@@ -46,7 +43,13 @@ uint64_t perft(Game& position, int depth) {
     if (root) {
         auto end = std::chrono::high_resolution_clock::now();
         auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
-        printf("total move generation time: %llu \n", duration);
+        printf("total move generation time: %llu:%02llu:%03llu \n", duration/60000,(duration/1000)%60, duration%1000);
+        printf("total nodes: %llu \n", nodes);
+        std::string nps = std::to_string(nodes*1000/duration.count());
+        for (int i = nps.length() - 3; i > 0; i -= 3) {
+            nps.insert(i, ",");
+        }
+        printf("nodes per second: %s \n", nps.c_str());
     }
     return nodes;
 }

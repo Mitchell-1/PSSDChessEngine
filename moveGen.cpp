@@ -377,18 +377,18 @@ Move * generateKingMoves(const Game& position, Move* moveList) {
 
 
 template<genType Type>
-Move* generate(const Game& position, Move * moveList) {
+Move* generate(Game& position, Move * moveList) {
     return moveList;
 };
 
 
-template Move* generate<CAPTURES>(const Game&, Move*);
-template Move* generate<QUIETS>(const Game&, Move*);
-template Move* generate<EVASIONS>(const Game&, Move*);
-template Move* generate<NON_EVASIONS>(const Game&, Move*);
+template Move* generate<CAPTURES>(Game&, Move*);
+template Move* generate<QUIETS>(Game&, Move*);
+template Move* generate<EVASIONS>(Game&, Move*);
+template Move* generate<NON_EVASIONS>(Game&, Move*);
 
 template <>
-Move* generate<LEGAL>(const Game& pos, Move* moveList) {
+Move* generate<LEGAL>(Game& pos, Move* moveList) {
     
     if (pos.turn) {
         moveList = generateBlackPawnMoves<LEGAL>(pos, moveList);

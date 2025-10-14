@@ -4,6 +4,7 @@
 #include <iostream>
 #include <vector>
 #include <cstdint>
+#include <algorithm>
 
 #include "move.h"
 using Bitboard = uint64_t;
@@ -126,7 +127,127 @@ namespace myEngine {
 
     void printMove(Move);
     int squareToInt(std::string square);
-    }
 
+    constexpr int WhitePawnPositionBB[64] = {
+        0,  0,  0,  0,  0,  0,  0,  0,
+        50, 50, 50, 50, 50, 50, 50, 50,
+        10, 10, 20, 30, 30, 20, 10, 10,
+        5,  5, 10, 25, 25, 10,  5,  5,
+        0,  0,  0, 20, 20,  0,  0,  0,
+        5, -5,-10,  0,  0,-10, -5,  5,
+        5, 10, 10,-20,-20, 10, 10,  5,
+        0,  0,  0,  0,  0,  0,  0,  0
+    };
+
+    inline int BlackPawnPositionBB[64];
+    inline const auto _ = []() constexpr {
+    for(int i = 0; i < 64; ++i) BlackPawnPositionBB[i] = WhitePawnPositionBB[56 - (i/8)*8 + i%8]; 
+    return 0; 
+    }();
+
+    constexpr int WhiteKnightPositionBB[64] = {
+        -50,-40,-30,-30,-30,-30,-40,-50,
+        -40,-20,  0,  0,  0,  0,-20,-40,
+        -30,  0, 10, 15, 15, 10,  0,-30,
+        -30,  5, 15, 20, 20, 15,  5,-30,
+        -30,  0, 15, 20, 20, 15,  0,-30,
+        -30,  5, 10, 15, 15, 10,  5,-30,
+        -40,-20,  0,  5,  5,  0,-20,-40,
+        -50,-40,-30,-30,-30,-30,-40,-50,
+    };
+
+    inline int BlackKnightPositionBB[64];
+    inline const auto BK = []() constexpr {
+    for(int i = 0; i < 64; ++i) BlackKnightPositionBB[i] = WhiteKnightPositionBB[56 - (i/8)*8 + i%8]; 
+    return 0; 
+    }();
+
+    constexpr int WhiteBishopPositionBB[64] = {
+        -20,-10,-10,-10,-10,-10,-10,-20,
+        -10,  0,  0,  0,  0,  0,  0,-10,
+        -10,  0,  5, 10, 10,  5,  0,-10,
+        -10,  5,  5, 10, 10,  5,  5,-10,
+        -10,  0, 10, 10, 10, 10,  0,-10,
+        -10, 10, 10, 10, 10, 10, 10,-10,
+        -10,  5,  0,  0,  0,  0,  5,-10,
+        -20,-10,-10,-10,-10,-10,-10,-20,
+    };
+
+    inline int BlackBishopPositionBB[64];
+    inline const auto BB = []() constexpr {
+    for(int i = 0; i < 64; ++i) BlackBishopPositionBB[i] = WhiteBishopPositionBB[56 - (i/8)*8 + i%8]; 
+    return 0; 
+    }();
+
+    constexpr int WhiteRookPositionBB[64] = {
+        0,  0,  0,  0,  0,  0,  0,  0,
+        5, 10, 10, 10, 10, 10, 10,  5,
+        -5,  0,  0,  0,  0,  0,  0, -5,
+        -5,  0,  0,  0,  0,  0,  0, -5,
+        -5,  0,  0,  0,  0,  0,  0, -5,
+        -5,  0,  0,  0,  0,  0,  0, -5,
+        -5,  0,  0,  0,  0,  0,  0, -5,
+        0,  0,  0,  5,  5,  0,  0,  0
+    };
+    inline int BlackRookPositionBB[64];
+    inline const auto BR = []() constexpr {
+    for(int i = 0; i < 64; ++i) BlackRookPositionBB[i] = WhiteRookPositionBB[56 - (i/8)*8 + i%8]; 
+    return 0; 
+    }();
+
+    constexpr int WhiteQueenPositionBB[64] = {
+        -20,-10,-10, -5, -5,-10,-10,-20,
+        -10,  0,  0,  0,  0,  0,  0,-10,
+        -10,  0,  5,  5,  5,  5,  0,-10,
+        -5,  0,  5,  5,  5,  5,  0, -5,
+        0,  0,  5,  5,  5,  5,  0, -5,
+        -10,  5,  5,  5,  5,  5,  0,-10,
+        -10,  0,  5,  0,  0,  0,  0,-10,
+        -20,-10,-10, -5, -5,-10,-10,-20
+    };
+
+    inline int BlackQueenPositionBB[64];
+    inline const auto BQ = []() constexpr {
+    for(int i = 0; i < 64; ++i) BlackQueenPositionBB[i] = WhiteQueenPositionBB[56 - (i/8)*8 + i%8]; 
+    return 0; 
+    }();
+
+    constexpr int WhiteKingPositionBB[64] = {
+        -30,-40,-40,-50,-50,-40,-40,-30,
+        -30,-40,-40,-50,-50,-40,-40,-30,
+        -30,-40,-40,-50,-50,-40,-40,-30,
+        -30,-40,-40,-50,-50,-40,-40,-30,
+        -20,-30,-30,-40,-40,-30,-30,-20,
+        -10,-20,-20,-20,-20,-20,-20,-10,
+        20, 20,  0,  0,  0,  0, 20, 20,
+        20, 30, 10,  0,  0, 10, 30, 20
+    };
+
+    inline int BlackKingPositionBB[64];
+    inline const auto BKG = []() constexpr {
+    for(int i = 0; i < 64; ++i) BlackKingPositionBB[i] = WhiteKingPositionBB[56 - (i/8)*8 + i%8]; 
+    return 0; 
+    }();
+
+    constexpr int WhiteKingEndPositionBB[64] = {
+        -50,-40,-30,-20,-20,-30,-40,-50,
+        -30,-20,-10,  0,  0,-10,-20,-30,
+        -30,-10, 20, 30, 30, 20,-10,-30,
+        -30,-10, 30, 40, 40, 30,-10,-30,
+        -30,-10, 30, 40, 40, 30,-10,-30,
+        -30,-10, 20, 30, 30, 20,-10,-30,
+        -30,-30,  0,  0,  0,  0,-30,-30,
+        -50,-30,-30,-30,-30,-30,-30,-50
+    };
+
+    inline int BlackKingEndPositionBB[64];
+    inline const auto BKE = []() constexpr {
+    for(int i = 0; i < 64; ++i) BlackKingEndPositionBB[i] = WhiteKingEndPositionBB[56 - (i/8)*8 + i%8]; 
+    return 0; 
+    }();
+
+    const int *getPiecePositionTable(int piece, bool colour, bool endgame);
+
+};
 
 #endif

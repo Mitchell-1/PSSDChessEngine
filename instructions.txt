@@ -1,9 +1,0 @@
-make in wsl
-
-valgrind --tool=callgrind ./v1-init
-
-
-kcachegrind callgrind.out.####
-
-
-

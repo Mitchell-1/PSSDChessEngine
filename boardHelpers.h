@@ -68,4 +68,14 @@ namespace bitboardHelpers {
     constexpr void updateBoard(Bitboard& board, int init){
         flipBit(board, init);
     }
-}
+
+    constexpr int getBitCount(Bitboard board){
+    int count = 0;
+    while (board){
+        count ++;
+        board &= board -1;
+    }
+    return count;
+    }
+
+};

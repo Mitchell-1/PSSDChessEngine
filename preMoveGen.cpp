@@ -32,7 +32,7 @@ Bitboard * genKnightAttackMask() {
 void genPossibleBishopMoves(){
     for (int square = 0; square< 64; square ++){
         uint64_t attackMask = bishopMasks[square];
-        int relevantBits = getBitCount(attackMask);
+        int relevantBits = bitboardHelpers::getBitCount(attackMask);
         int occupancyIndex = (1 << relevantBits);
         for (int index = 0; index < occupancyIndex; index ++){
             uint64_t occupancy = set_occupancy(index, relevantBits, attackMask);
@@ -45,7 +45,7 @@ void genPossibleBishopMoves(){
 void genPossibleRookMoves(){
     for (int square = 0; square< 64; square ++){
         uint64_t attackMask = rookMasks[square];
-        int relevantBits = getBitCount(attackMask);
+        int relevantBits = bitboardHelpers::getBitCount(attackMask);
         int occupancyIndex = (1 << relevantBits);
         for (int index = 0; index < occupancyIndex; index ++){
             uint64_t occupancy = set_occupancy(index, relevantBits, attackMask);

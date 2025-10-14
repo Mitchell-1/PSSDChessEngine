@@ -16,6 +16,6 @@ enum genType {
 };
 
 template<genType>
-Move * generate(const Game& position, Move * moveList);
+Move * generate(Game& position, Move * moveList);
 
 #endif

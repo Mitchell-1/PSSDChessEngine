@@ -19,14 +19,7 @@ uint64_t getRandomU64(){
     return n1 | (n2 << 16) | (n3 << 32) | (n4 << 48);
 }
 
-int getBitCount(uint64_t board){
-    int count = 0;
-    while (board){
-        count ++;
-        board &= board -1;
-    }
-    return count;
-}
+
 
 // Pre-generated magic numbers for Orthogonal sliding pieces
 uint64_t rookMagics[64] ={
@@ -288,7 +281,7 @@ uint64_t findMagicNum(int square, int relevantBits, int piece){
         // Sets an arbitrary limit to the size of the resulting index
         // for speed and storage limitations.
         // Eliminates bad magic numbers quickly which saves time on checking all collisions.
-        if (getBitCount((attackMask * magicNum) & 0xFF00000000000000) < 6) continue;
+        if (bitboardHelpers::getBitCount((attackMask * magicNum) & 0xFF00000000000000) < 6) continue;
 
         // Resets used attacks and tests all attacks for collisions.
         memset(usedAttacks, uint64_t(0), sizeof(usedAttacks));

@@ -48,24 +48,48 @@ void myEngine::printMove(Move move){
     switch (move.type())
     {
     case 0:
-        printf("%s  Pawn      %s  ->  %s     %d      %d       %d           %d\n", colour, STC[move.fromSquare()], STC[move.toSquare()], move.capture(), 0, (move.special()==1)*(move.promotion()+1), move.passantable());
+        printf("%s  Pawn      %s  ->  %s     %d       %d           %d\n", colour, STC[move.fromSquare()], STC[move.toSquare()], move.capture(), (move.special()==1)*(move.promotion()+1), move.passantable());
         break;
     case 2:
-        printf("%s  Bishop    %s  ->  %s     %d      %d       N           N\n", colour, STC[move.fromSquare()], STC[move.toSquare()], move.capture(), 0 );
+        printf("%s  Bishop    %s  ->  %s     %d       N           N\n", colour, STC[move.fromSquare()], STC[move.toSquare()], move.capture() );
         break;
     case 1:
-        printf("%s  Knight    %s  ->  %s     %d      %d       N           N\n", colour, STC[move.fromSquare()], STC[move.toSquare()], move.capture(), 0 );
+        printf("%s  Knight    %s  ->  %s     %d       N           N\n", colour, STC[move.fromSquare()], STC[move.toSquare()], move.capture() );
         break;
     case 3:
-        printf("%s  Rook      %s  ->  %s     %d      %d       N           N\n", colour, STC[move.fromSquare()], STC[move.toSquare()], move.capture(), 0 );
+        printf("%s  Rook      %s  ->  %s     %d       N           N\n", colour, STC[move.fromSquare()], STC[move.toSquare()], move.capture() );
         break;
     case 4:
-        printf("%s  Queen     %s  ->  %s     %d      %d       N           N\n" , colour, STC[move.fromSquare()], STC[move.toSquare()], move.capture(), 0 );
+        printf("%s  Queen     %s  ->  %s     %d       N           N\n" , colour, STC[move.fromSquare()], STC[move.toSquare()], move.capture() );
         break;
     case 5:
-        printf("%s  King      %s  ->  %s     %d      N       N           N\n", colour, STC[move.fromSquare()], STC[move.toSquare()], move.capture());
+        printf("%s  King      %s  ->  %s     %d       N           N\n", colour, STC[move.fromSquare()], STC[move.toSquare()], move.capture());
         break;
     default:
         break;
+    }
+}
+
+const int *myEngine::getPiecePositionTable(int piece, bool colour, bool endgame){
+    const int *positionTable = nullptr;
+    switch (piece){
+        case 0: // pawn
+            return colour ? BlackKnightPositionBB : WhiteKnightPositionBB;
+        case 1: // knight
+            return colour ? BlackKnightPositionBB : WhiteKnightPositionBB;
+        case 2: // bishop
+            return colour ? BlackBishopPositionBB : WhiteBishopPositionBB;
+        case 3: // rook
+            return colour ? BlackRookPositionBB : WhiteRookPositionBB;
+        case 4: // queen
+            return colour ? BlackQueenPositionBB : WhiteQueenPositionBB;
+        case 5: // king
+            if (endgame) {
+                return colour ? BlackKingEndPositionBB : WhiteKingEndPositionBB;
+            } else {
+                return colour ? BlackKingPositionBB : WhiteKingPositionBB;
+            }
+        default:
+            return nullptr;
     }
 }

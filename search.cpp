@@ -9,10 +9,9 @@ namespace search_impl {
     };
 
     ScoredMove minimax(Game &game, int depth) {
-        Evaluate evaluator;
         // at depth 0 evaluate and return
         if (depth == 0){
-            return ScoredMove{evaluator.evaluateBoard(game), Move()};
+            return ScoredMove{Evaluate::evaluateBoard(game), 0}; //Evaluation and Null move
         }
 
         MoveList<LEGAL> moves(game);
@@ -20,7 +19,7 @@ namespace search_impl {
         if (n == 0){
             // if no legal moves, return evaluation 
             // mate/stalemate handling can be added later by evaluation function
-            return ScoredMove{evaluator.evaluateBoard(game), Move()};
+            return ScoredMove{Evaluate::evaluateBoard(game, 0), 0}; //Evaluation with optional tag and Null move
         }
 
         bool sideToMove = game.turn; // 0 = white, 1 = black
@@ -29,24 +28,20 @@ namespace search_impl {
         bool maximise = (sideToMove == 0);
 
         ScoredMove best;
+        best.move = *moves.begin();
         if (maximise){
             best.score = INT32_MIN;
         }else{
             best.score = INT32_MAX;
         }
-
         for (const Move *it = moves.begin(); it != moves.end(); ++it){
             Move m = *it;
-            if (game.makeMove(m)){
-                // king is in check, move is undone by makeMove already so we can just skip this move
-                continue;
-            }
-
+            game.makeMove(m);
+            
             ScoredMove child = minimax(game,depth - 1);
 
             // revert
             game.unMakeMove(m);
-
             if (maximise) {
                 if (child.score > best.score){
                     best.score = child.score;
@@ -62,7 +57,7 @@ namespace search_impl {
 
         return best;
     }
-}
+};
 
 Move Search::FindBestMove(Game &game, int depth) {
     if (depth <= 0) {
@@ -70,4 +65,4 @@ Move Search::FindBestMove(Game &game, int depth) {
     }
     search_impl::ScoredMove best = search_impl::minimax(game, depth);
     return best.move;
-}
+};

@@ -5,13 +5,14 @@
 #include "moveList.h"
 #include "game.h"
 #include "perft.h"
+#include "helpers.h"
 #include <iostream>
 #include <string>
 
 class Evaluate {
     public:
         Evaluate() {};
-        int evaluateBoard(const Game &game);
+        static int evaluateBoard(const Game &game, int moves = 1);
 };
 
 #endif
