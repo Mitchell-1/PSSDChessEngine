@@ -564,6 +564,8 @@ bool Game::makeMove(Move& move){
         updateBoard(blackBoards[move.type()], from, to);
         int capture = move.capture();
         if (capture != 7) {
+            captureHistory.push_back(movesWithoutCapture);
+            movesWithoutCapture = 0;
             if (capture == 6) {
                 //en passant capture
                 updateBoard(whiteBoards[6], to);
@@ -572,6 +574,8 @@ bool Game::makeMove(Move& move){
                 popBit(whiteBoards[capture], to);
             }
             
+        } else {
+            movesWithoutCapture++;
         }
 
         // If position is illegal undo changes and return true.
@@ -587,6 +591,7 @@ bool Game::makeMove(Move& move){
                 }
             }
             this->updateMainBoards();
+            this->genAttacks();
             this->turn = this->turn ? 0 : 1;
             return true;
         }
@@ -663,6 +668,8 @@ bool Game::makeMove(Move& move){
         updateBoard(whiteBoards[move.type()], from, to);
         int capture = move.capture();
         if (capture != 7) {
+            captureHistory.push_back(movesWithoutCapture);
+            movesWithoutCapture = 0;
             if (capture == 6) {
                 //en passant capture
                 updateBoard(blackBoards[6], to);
@@ -671,6 +678,8 @@ bool Game::makeMove(Move& move){
                 popBit(blackBoards[capture], to);
             }
             
+        } else {
+            movesWithoutCapture++;
         }
 
         // If position is illegal undo changes and return true.
@@ -798,6 +807,9 @@ void Game::unMakeMove(Move& move){
             } else {
                 setBit(whiteBoards[capture], to);
             }
+            movesWithoutCapture = captureHistory.back();
+        } else {
+            movesWithoutCapture--;
         }
         if (move.passantable()){
             blackBoards[6] = 0;
@@ -835,6 +847,9 @@ void Game::unMakeMove(Move& move){
             } else {
                 setBit(blackBoards[capture], to);
             }
+            movesWithoutCapture = captureHistory.back();
+        } else {
+            movesWithoutCapture--;
         }
         if (move.passantable()){
             whiteBoards[6] = 0;
@@ -874,141 +889,75 @@ void Game::unMakeMove(Move& move){
         
 }
 
-bool Game::isPosOk(Move& move){
-    bool flag = true;
-    int from = move.fromSquare();
-    int to = move.toSquare();
-    int capture = move.capture();
-    int lsb;
+bool Game::isMoveOk(Move& move){
+    this->turn = this->turn ? 0 : 1;
+    int from, to;
+    from = move.fromSquare();
+    to = move.toSquare();
+    bool flag = false;
     if (move.colour()) {
         updateBoard(blackBoards[move.type()], from, to);
-
-        if (capture != 7){
+        int capture = move.capture();
+        if (capture != 7) {
             if (capture == 6) {
+                //en passant capture
                 updateBoard(whiteBoards[6], to);
                 updateBoard(whiteBoards[0], to+8);
             } else {
                 popBit(whiteBoards[capture], to);
             }
-        }
-        this->updateMainBoards();
-        Bitboard kingBB = blackBoards[5];
-        int king = getLSB(kingBB);
-
-        Bitboard bRayBB = get_bishop(king, this->mainBoard);
-        bRayBB &= this->whiteBoard;
-        
-        while (bRayBB) {
-            lsb = getLSB(bRayBB);
-            if (((oneBB << lsb) & whiteBoards[2]) || ((oneBB << lsb) & whiteBoards[4])) {
-                flag = false;
-            }
+            
         }
 
-        Bitboard rRayBB = get_rook(king, this->mainBoard);
-        rRayBB &= this->whiteBoard;
-        
-        while (rRayBB) {
-            lsb = getLSB(rRayBB);
-            if (((oneBB << lsb) & whiteBoards[3]) || ((oneBB << lsb) & whiteBoards[4])) {
-                flag = false;
-            }
+        // If position is illegal undo changes and return true.
+        this->genAttacks();
+        if (blackBoards[5] & whiteAttack) {
+            flag = true;
         }
-
-        Bitboard nRayBB = knightAttackMask[king];
-        nRayBB &= whiteBoard;
-        while (nRayBB) {
-            lsb = getLSB(nRayBB);
-            if (((oneBB << lsb) & whiteBoards[1])) {
-                flag = false;
-            }
-        }
-        if (blackBoards[5] & ~myEngine::FileHBB) {
-            if (blackBoards[5] >> 7 & whiteBoards[0]) {
-                flag = false;
-            }
-        }
-        if (blackBoards[5] & ~myEngine::FileABB) {
-            if (blackBoards[5] >> 9 & whiteBoards[0]) {
-                flag = false;
-            }
-        }
-
+        updateBoard(blackBoards[move.type()], to, from);
         if (capture != 7) {
             if (capture == 6) {
-                setBit(whiteBoards[6], to);
-                setBit(whiteBoards[0], to+8);
+                updateBoard(whiteBoards[6], to);
+                updateBoard(whiteBoards[0], to+8);
             } else {
                 setBit(whiteBoards[capture], to);
             }
         }
-
-        updateBoard(blackBoards[move.type()], to, from);
+        this->genAttacks();
         this->updateMainBoards();
+        this->turn = this->turn ? 0 : 1;
     } else {
         updateBoard(whiteBoards[move.type()], from, to);
-
-        if (capture != 7){
+        int capture = move.capture();
+        if (capture != 7) {
             if (capture == 6) {
+                //en passant capture
                 updateBoard(blackBoards[6], to);
                 updateBoard(blackBoards[0], to-8);
             } else {
                 popBit(blackBoards[capture], to);
             }
-        }
-        this->updateMainBoards();
-        Bitboard kingBB = whiteBoards[5];
-        int king = getLSB(kingBB);
-
-        Bitboard bRayBB = get_bishop(king, this->mainBoard);
-        bRayBB &= this->blackBoard;
-        
-        while (bRayBB) {
-            lsb = getLSB(bRayBB);
-            if (((oneBB << lsb) & blackBoards[2]) || ((oneBB << lsb) & blackBoards[4])) {
-                flag = false;
-            }
+            
         }
 
-        Bitboard rRayBB = get_rook(king, this->mainBoard);
-        rRayBB &= blackBoard;
-        
-        while (rRayBB) {
-            lsb = getLSB(rRayBB);
-            if (((oneBB << lsb) & blackBoards[3]) || ((oneBB << lsb) & blackBoards[4])) {
-                flag = false;
-            }
+        // If position is illegal undo changes and return true.
+        this->genAttacks();
+        if (whiteBoards[5] & blackAttack) {
+            flag = true;
         }
-
-        Bitboard nRayBB = knightAttackMask[king];
-        while (nRayBB) {
-            lsb = getLSB(nRayBB);
-            if (((oneBB << lsb) & blackBoards[1])) {
-                flag = false;
-            }
-        }
-        if (whiteBoards[5] & ~myEngine::FileHBB) {
-            if (whiteBoards[5] << 9 & blackBoards[0]) {
-                flag = false;
-            }
-        }
-        if (whiteBoards[5] & ~myEngine::FileABB) {
-            if (whiteBoards[5] << 7 & blackBoards[0]) {
-                flag = false;
-            }
-        }
-
-        if (capture != 7) {
-            if (capture == 6) {
-                setBit(blackBoards[6], to);
-                setBit(blackBoards[0], to-8);
-            } else {
-                setBit(blackBoards[capture], to);
-            }
-        }
-        
         updateBoard(whiteBoards[move.type()], to, from);
-        this->updateMainBoards();
+            if (capture != 7) {
+                if (capture == 6) {
+                    updateBoard(blackBoards[6], to);
+                    updateBoard(blackBoards[0], to-8);
+                } else {
+                    setBit(blackBoards[capture], to);
+                }
+            }
+            
+            this->updateMainBoards();
+            this->genAttacks();
+            this->turn = this->turn ? 0 : 1;
     }
     return flag;
 }
@@ -1085,3 +1034,65 @@ void Game::recieveMove(std::string moveStr){
         return;
     }
 }
+
+
+void Game::initHash() {
+    for (int i = 0; i < 781; i++) {
+        hashes[i] = getRandomU64();
+    }
+    
+    for (int i = 0; i < 6; i++) {
+        Bitboard whitePieceBB = whiteBoards[i];
+        Bitboard blackPieceBB = blackBoards[i];
+        while (whitePieceBB) {
+            int lsb = bitboardHelpers::getLSB(whitePieceBB);
+            hash = hash ^ hashes[i * 64 + lsb];
+        }
+        while (blackPieceBB) {
+            int lsb = bitboardHelpers::getLSB(blackPieceBB);
+            hash = hash ^ hashes[blackOffset + i * 64 + lsb];
+        }
+        hash = hash & hashes[769] * turn;
+        hash = hash & hashes[770] * canWhiteKingCastle;
+        hash = hash & hashes[771] * canWhiteQueenCastle;
+        hash = hash & hashes[772] * canBlackKingCastle;
+        hash = hash & hashes[773] * canBlackQueenCastle;
+        if (whiteBoards[6] != 0) {
+            Bitboard lsbBB = whiteBoards[6];
+            int lsb = bitboardHelpers::getLSB(lsbBB);
+            hash = hash ^ hashes[774 + lsb%8];
+        }
+        if (blackBoards[6] != 0) {
+            Bitboard lsbBB = blackBoards[6];
+            int lsb = bitboardHelpers::getLSB(lsbBB);
+            hash = hash ^ hashes[774 + lsb%8];
+        }
+    }
+};
+
+void Game::updateHash(Move& move) {
+    if (move.colour()) {
+        hash = hash ^ hashes[blackOffset + move.type() * 64 + move.fromSquare()];
+        hash = hash ^ hashes[blackOffset + move.type() * 64 + move.toSquare()];
+    } else {
+        hash = hash ^ hashes[move.type() * 64 + move.fromSquare()];
+        hash = hash ^ hashes[move.type() * 64 + move.toSquare()];
+    }
+    int capture = move.capture();
+    if (capture != 7) {
+        if (capture == 6) {
+            if (move.colour()) {
+                hash = hash ^ hashes[capture * 64 + move.toSquare()+8];
+            } else {
+                hash = hash ^ hashes[blackOffset + capture * 64 + move.toSquare()-8];
+            }
+        } else {
+            if (move.colour()) {
+                hash = hash ^ hashes[capture * 64 + move.toSquare()];
+            } else {
+                hash = hash ^ hashes[blackOffset + capture * 64 + move.toSquare()];
+            }
+        }
+    }
+    hash = hash ^ hashes[769];
+};

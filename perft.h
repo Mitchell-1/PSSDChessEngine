@@ -21,10 +21,6 @@ uint64_t perft(Game& position, int depth) {
             if (leaf) {
                 count = 0;
                 for (Move m2: MoveList<LEGAL>(position)) {
-                    if (!(position.isPosOk(m2))){
-                        
-                        continue;
-                    }
                     nodes++;
                     count++;
                 }  

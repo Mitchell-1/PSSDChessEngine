@@ -19,11 +19,10 @@ struct MoveList {
                 Move* move;
                 int counter = 0;
                 for (move = tempMoveList; move != tempLast; ++move) {
-                    if (position.makeMove(*move)){
+                    if (position.isMoveOk(*move)){
                         continue;
                     }
                     moveList[counter++] = *move;
-                    position.unMakeMove(*move);
                 }
                 last = &moveList[counter];
             }

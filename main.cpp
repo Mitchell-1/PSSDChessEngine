@@ -10,7 +10,7 @@
 
 void UCI_Listen(Game & game) {
     std::string input;
-    Search Searcher;
+    Search Searcher(0);
     while (true) {
         std::getline(std::cin, input);
         if (input == "quit") {
@@ -45,8 +45,11 @@ void UCI_Listen(Game & game) {
             
 
             if (bestMove.raw() != 0) {
+                //std::cout << myEngine::STC[bestMove.fromSquare()]  << myEngine::STC[bestMove.toSquare()] << std::endl;
                 printMove(bestMove);
                 game.makeMove(bestMove);
+                game.updateHash(bestMove);
+                game.moveHistory.push_back(game.hash);
             } else {
                 std::cout << "bestmove (none)" << std::endl;
                 continue;

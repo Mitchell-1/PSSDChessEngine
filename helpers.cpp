@@ -74,7 +74,7 @@ const int *myEngine::getPiecePositionTable(int piece, bool colour, bool endgame)
     const int *positionTable = nullptr;
     switch (piece){
         case 0: // pawn
-            return colour ? BlackKnightPositionBB : WhiteKnightPositionBB;
+            return colour ? BlackPawnPositionBB : WhitePawnPositionBB;
         case 1: // knight
             return colour ? BlackKnightPositionBB : WhiteKnightPositionBB;
         case 2: // bishop
