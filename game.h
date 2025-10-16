@@ -5,6 +5,7 @@
 #include "boardHelpers.h"
 #include "preMoveGen.h"
 #include "move.h"
+#include "magics.h"
 #include <iostream>
 #include <vector>
 #include <bitset>
@@ -17,19 +18,24 @@ class Game {
         Bitboard blackBoards[7] = {0, 0, 0, 0, 0, 0, 0};
         Bitboard whiteAttacks[7] = {0, 0, 0, 0, 0, 0, 0};
         Bitboard blackAttacks[7] = {0, 0, 0, 0, 0, 0, 0};
+        uint64_t hashes[781];
         Bitboard whiteAttack = 0;
         Bitboard blackAttack = 0;
         Bitboard mainBoard = 0;
         Bitboard whiteBoard = 0;
         Bitboard blackBoard = 0;
-
+        uint64_t hash = 0;
+        uint32_t movesWithoutCapture = 0;
         std::vector<Bitboard> WhitePHistory;
         std::vector<Bitboard> BlackPHistory;
+        std::vector<int> captureHistory;
 
         Game(std::string fen){
             fenToBitBoards(fen);
             WhitePHistory.reserve(30);
             BlackPHistory.reserve(30);
+            initHash();
+            moveHistory.reserve(100);
         }
         void fenToBitBoards(std::string fen);
         void updateMainBoards();
@@ -38,8 +44,12 @@ class Game {
         void updateAttacks(Move move);
         bool makeMove(Move& move);
         void unMakeMove(Move& move);
-        bool isPosOk(Move& move);
+        bool inCheck(bool colour);
+        bool isMoveOk(Move& move);
         void recieveMove(std::string moveStr);
+        void initHash();
+        void updateHash(Move& move);
+        std::vector<int> moveHistory;
         Bitboard whiteKingCastle = 112;
         Bitboard WhiteKingRook = 160;
         bool canWhiteKingCastle = false;
@@ -52,6 +62,7 @@ class Game {
         Bitboard blackQueenCastle = 2017612633061982208;
         bool canBlackQueenCastle = false;
         Bitboard blackQueenRook = 648518346341351424;
+        int blackOffset = 385;
         bool turn = 0;
         bool debug = false;
 };

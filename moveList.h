@@ -19,16 +19,17 @@ struct MoveList {
                 Move* move;
                 int counter = 0;
                 for (move = tempMoveList; move != tempLast; ++move) {
-                    if (position.makeMove(*move)){
+                    if (position.isMoveOk(*move)){
                         continue;
                     }
                     moveList[counter++] = *move;
-                    position.unMakeMove(*move);
                 }
                 last = &moveList[counter];
             }
 
         MoveList(Move MoveList[]);
+        Move * begin() {return moveList;}
+        Move * end() {return last;}
         const Move* begin() const {return moveList;}
         const Move* end() const {return last;}
         size_t size() const {return last - moveList;}

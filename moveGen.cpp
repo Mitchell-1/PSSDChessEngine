@@ -377,7 +377,17 @@ Move * generateKingMoves(const Game& position, Move* moveList) {
 
 
 template<genType Type>
-Move* generate(Game& position, Move * moveList) {
+Move* generate(Game& pos, Move * moveList) {
+    if (pos.turn) {
+        moveList = generateBlackPawnMoves<Type>(pos, moveList);
+    } else {
+        moveList = generateWhitePawnMoves<Type>(pos, moveList);
+    }
+    moveList = generateKnightMoves<Type>(pos, moveList);
+    moveList = generateBishopMoves<Type>(pos, moveList);
+    moveList = generateRookMoves<Type>(pos, moveList);
+    moveList = generateQueenMoves<Type>(pos, moveList);
+    moveList = generateKingMoves<Type>(pos, moveList);
     return moveList;
 };
 
@@ -386,20 +396,5 @@ template Move* generate<CAPTURES>(Game&, Move*);
 template Move* generate<QUIETS>(Game&, Move*);
 template Move* generate<EVASIONS>(Game&, Move*);
 template Move* generate<NON_EVASIONS>(Game&, Move*);
-
-template <>
-Move* generate<LEGAL>(Game& pos, Move* moveList) {
-    
-    if (pos.turn) {
-        moveList = generateBlackPawnMoves<LEGAL>(pos, moveList);
-    } else {
-        moveList = generateWhitePawnMoves<LEGAL>(pos, moveList);
-    }
-    moveList = generateKnightMoves<LEGAL>(pos, moveList);
-    moveList = generateBishopMoves<LEGAL>(pos, moveList);
-    moveList = generateRookMoves<LEGAL>(pos, moveList);
-    moveList = generateQueenMoves<LEGAL>(pos, moveList);
-    moveList = generateKingMoves<LEGAL>(pos, moveList);
-    return moveList;
-}
+template Move* generate<LEGAL>(Game&, Move*);
 

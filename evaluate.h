@@ -10,8 +10,10 @@
 #include <string>
 
 class Evaluate {
+        
     public:
         Evaluate() {};
+        std::vector<int> prevPositionTable;
         static int evaluateBoard(const Game &game, int moves = 1);
 };
 

@@ -7,35 +7,29 @@
 
 //Runs a perft test to return the number of possible nodes at a given depth.
 template<bool root>
-uint64_t perft(Game& position, int depth) {
+uint64_t perft(Game& position, int depth, int verbosity=0) {
     auto start = std::chrono::high_resolution_clock::now();
     uint64_t count = 0, nodes = 0;
     const bool leaf = (depth == 2);
     for (Move m: MoveList<LEGAL>(position)) {
         if (root && depth <= 1) {
-            position.makeMove(m);
             count = 1, nodes++;
-            position.unMakeMove(m);
         } else {
             position.makeMove(m);
             if (leaf) {
-                count = 0;
-                for (Move m2: MoveList<LEGAL>(position)) {
-                    if (!(position.isPosOk(m2))){
-                        
-                        continue;
-                    }
-                    nodes++;
-                    count++;
-                }  
+                count = MoveList<LEGAL>(position).size();
+                nodes += count;
+                // for (Move m2: MoveList<LEGAL>(position)) {
+                //     nodes++;
+                //     count++;
+                // }  
             } else {
                 count = perft<false>(position, depth-1);
                 nodes += count;
             }
-            
             position.unMakeMove(m);
         }
-        if (root) {
+        if (root && verbosity > 0) {
             printMove(m);
             std::cout << count << std::endl;
         }
@@ -45,6 +39,9 @@ uint64_t perft(Game& position, int depth) {
         auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
         printf("total move generation time: %llu:%02llu:%03llu \n", duration/60000,(duration/1000)%60, duration%1000);
         printf("total nodes: %llu \n", nodes);
+        if (duration.count() == 0) {
+            duration = std::chrono::milliseconds(1);
+        }
         std::string nps = std::to_string(nodes*1000/duration.count());
         for (int i = nps.length() - 3; i > 0; i -= 3) {
             nps.insert(i, ",");

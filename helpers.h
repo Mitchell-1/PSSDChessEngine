@@ -128,7 +128,7 @@ namespace myEngine {
     void printMove(Move);
     int squareToInt(std::string square);
 
-    constexpr int WhitePawnPositionBB[64] = {
+    constexpr int BlackPawnPositionBB[64] = {
         0,  0,  0,  0,  0,  0,  0,  0,
         50, 50, 50, 50, 50, 50, 50, 50,
         10, 10, 20, 30, 30, 20, 10, 10,
@@ -139,13 +139,13 @@ namespace myEngine {
         0,  0,  0,  0,  0,  0,  0,  0
     };
 
-    inline int BlackPawnPositionBB[64];
-    inline const auto _ = []() constexpr {
-    for(int i = 0; i < 64; ++i) BlackPawnPositionBB[i] = WhitePawnPositionBB[56 - (i/8)*8 + i%8]; 
+    inline int WhitePawnPositionBB[64];
+    inline const auto WP = []() constexpr {
+    for(int i = 0; i < 64; ++i) WhitePawnPositionBB[i] = BlackPawnPositionBB[56 - (i/8)*8 + i%8]; 
     return 0; 
     }();
 
-    constexpr int WhiteKnightPositionBB[64] = {
+    constexpr int BlackKnightPositionBB[64] = {
         -50,-40,-30,-30,-30,-30,-40,-50,
         -40,-20,  0,  0,  0,  0,-20,-40,
         -30,  0, 10, 15, 15, 10,  0,-30,
@@ -156,13 +156,13 @@ namespace myEngine {
         -50,-40,-30,-30,-30,-30,-40,-50,
     };
 
-    inline int BlackKnightPositionBB[64];
-    inline const auto BK = []() constexpr {
-    for(int i = 0; i < 64; ++i) BlackKnightPositionBB[i] = WhiteKnightPositionBB[56 - (i/8)*8 + i%8]; 
+    inline int WhiteKnightPositionBB[64];
+    inline const auto WK = []() constexpr {
+    for(int i = 0; i < 64; ++i) WhiteKnightPositionBB[i] = BlackKnightPositionBB[56 - (i/8)*8 + i%8]; 
     return 0; 
     }();
 
-    constexpr int WhiteBishopPositionBB[64] = {
+    constexpr int BlackBishopPositionBB[64] = {
         -20,-10,-10,-10,-10,-10,-10,-20,
         -10,  0,  0,  0,  0,  0,  0,-10,
         -10,  0,  5, 10, 10,  5,  0,-10,
@@ -173,13 +173,13 @@ namespace myEngine {
         -20,-10,-10,-10,-10,-10,-10,-20,
     };
 
-    inline int BlackBishopPositionBB[64];
-    inline const auto BB = []() constexpr {
-    for(int i = 0; i < 64; ++i) BlackBishopPositionBB[i] = WhiteBishopPositionBB[56 - (i/8)*8 + i%8]; 
+    inline int WhiteBishopPositionBB[64];
+    inline const auto WB = []() constexpr {
+    for(int i = 0; i < 64; ++i) WhiteBishopPositionBB[i] = BlackBishopPositionBB[56 - (i/8)*8 + i%8]; 
     return 0; 
     }();
 
-    constexpr int WhiteRookPositionBB[64] = {
+    constexpr int BlackRookPositionBB[64] = {
         0,  0,  0,  0,  0,  0,  0,  0,
         5, 10, 10, 10, 10, 10, 10,  5,
         -5,  0,  0,  0,  0,  0,  0, -5,
@@ -189,13 +189,13 @@ namespace myEngine {
         -5,  0,  0,  0,  0,  0,  0, -5,
         0,  0,  0,  5,  5,  0,  0,  0
     };
-    inline int BlackRookPositionBB[64];
-    inline const auto BR = []() constexpr {
-    for(int i = 0; i < 64; ++i) BlackRookPositionBB[i] = WhiteRookPositionBB[56 - (i/8)*8 + i%8]; 
+    inline int WhiteRookPositionBB[64];
+    inline const auto WR = []() constexpr {
+    for(int i = 0; i < 64; ++i) WhiteRookPositionBB[i] = BlackRookPositionBB[56 - (i/8)*8 + i%8]; 
     return 0; 
     }();
 
-    constexpr int WhiteQueenPositionBB[64] = {
+    constexpr int BlackQueenPositionBB[64] = {
         -20,-10,-10, -5, -5,-10,-10,-20,
         -10,  0,  0,  0,  0,  0,  0,-10,
         -10,  0,  5,  5,  5,  5,  0,-10,
@@ -206,13 +206,13 @@ namespace myEngine {
         -20,-10,-10, -5, -5,-10,-10,-20
     };
 
-    inline int BlackQueenPositionBB[64];
-    inline const auto BQ = []() constexpr {
-    for(int i = 0; i < 64; ++i) BlackQueenPositionBB[i] = WhiteQueenPositionBB[56 - (i/8)*8 + i%8]; 
+    inline int WhiteQueenPositionBB[64];
+    inline const auto WQ = []() constexpr {
+    for(int i = 0; i < 64; ++i) WhiteQueenPositionBB[i] = BlackQueenPositionBB[56 - (i/8)*8 + i%8]; 
     return 0; 
     }();
 
-    constexpr int WhiteKingPositionBB[64] = {
+    constexpr int BlackKingPositionBB[64] = {
         -30,-40,-40,-50,-50,-40,-40,-30,
         -30,-40,-40,-50,-50,-40,-40,-30,
         -30,-40,-40,-50,-50,-40,-40,-30,
@@ -223,13 +223,13 @@ namespace myEngine {
         20, 30, 10,  0,  0, 10, 30, 20
     };
 
-    inline int BlackKingPositionBB[64];
-    inline const auto BKG = []() constexpr {
-    for(int i = 0; i < 64; ++i) BlackKingPositionBB[i] = WhiteKingPositionBB[56 - (i/8)*8 + i%8]; 
+    inline int WhiteKingPositionBB[64];
+    inline const auto WKG = []() constexpr {
+    for(int i = 0; i < 64; ++i) WhiteKingPositionBB[i] = BlackKingPositionBB[56 - (i/8)*8 + i%8]; 
     return 0; 
     }();
 
-    constexpr int WhiteKingEndPositionBB[64] = {
+    constexpr int BlackKingEndPositionBB[64] = {
         -50,-40,-30,-20,-20,-30,-40,-50,
         -30,-20,-10,  0,  0,-10,-20,-30,
         -30,-10, 20, 30, 30, 20,-10,-30,
@@ -240,9 +240,9 @@ namespace myEngine {
         -50,-30,-30,-30,-30,-30,-30,-50
     };
 
-    inline int BlackKingEndPositionBB[64];
-    inline const auto BKE = []() constexpr {
-    for(int i = 0; i < 64; ++i) BlackKingEndPositionBB[i] = WhiteKingEndPositionBB[56 - (i/8)*8 + i%8]; 
+    inline int WhiteKingEndPositionBB[64];
+    inline const auto WKE = []() constexpr {
+    for(int i = 0; i < 64; ++i) WhiteKingEndPositionBB[i] = BlackKingEndPositionBB[56 - (i/8)*8 + i%8]; 
     return 0; 
     }();
 

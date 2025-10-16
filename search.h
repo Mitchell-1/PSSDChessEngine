@@ -10,7 +10,8 @@
 
 class Search {
     public:
-        Search() {};
+        int verbosity = 0;
+        Search(int verbose) : verbosity(verbose) {};
         Move FindBestMove(Game &game, int depth);
 };
 
