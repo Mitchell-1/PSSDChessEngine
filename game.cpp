@@ -773,6 +773,7 @@ void Game::unMakeMove(Move& move){
                 setBit(whiteBoards[capture], to);
             }
             movesWithoutCapture = captureHistory.back();
+            captureHistory.pop_back();
         } else {
             movesWithoutCapture--;
         }
@@ -813,6 +814,7 @@ void Game::unMakeMove(Move& move){
                 setBit(blackBoards[capture], to);
             }
             movesWithoutCapture = captureHistory.back();
+            captureHistory.pop_back();
         } else {
             movesWithoutCapture--;
         }
@@ -859,6 +861,9 @@ bool Game::inCheck(bool colour) {
     Bitboard attackBB;
     if (colour) {
         int kingSquare = getLSB(kingBB);
+        if (kingSquare == 404) {
+            return true;
+        }
         attackBB = get_bishop(kingSquare, this->mainBoard);
         if ((whiteBoards[2] | whiteBoards[4]) & attackBB) {
             return true;
@@ -884,6 +889,9 @@ bool Game::inCheck(bool colour) {
         return false;
     } else {
         int kingSquare = getLSB(kingBB);
+        if (kingSquare == 404) {
+            return true;
+        }
         attackBB = get_bishop(kingSquare, this->mainBoard);
         if ((blackBoards[2] | blackBoards[4]) & attackBB){
             return true;

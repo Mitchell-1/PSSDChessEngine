@@ -107,8 +107,10 @@ void UCI_Listen(Game & game, int verbosity) {
             game.recieveMove(moveStr);
         } else if (input.substr(0, 11) == "perftSuite") {
             perftSuite(game);
-        } else { 
-            std::cout << "Unknown command: " << input << std::endl;
+        } else if (input.substr(0, 4) == "test") {
+            int eval = Evaluate::evaluateBoard(game, 1);
+            std::cout << "Evaluation of current position: " << eval << std::endl;
+
         }
             
     }

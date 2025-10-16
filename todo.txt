@@ -1,16 +1,9 @@
-- Implement alpha-beta pruning for move generation. 
-    
 - Implement timing into searching so that the bot is less likely to lose on time.
 
 - Implement the rest of the "go" commands, e.g. go wtime #### btime ####
 
-- Implement position hashing
-    - Implement transposition table for faster searching
-    
 
 Potential implementations:
-
-- change Move object to be 64 bit data and upper 32 bits will be the moves score. Allows for sorting the move without other objects/functions.
 
 - Implement default openings
 
@@ -26,3 +19,8 @@ Done:
 - Implement a counter to test how many nodes are searched/evaluated
 
 - Implement "Capture" type feature for move generation/searching.
+
+- Implement position hashing
+    - Implement transposition table for faster searching
+
+- Implement alpha-beta pruning for move generation. 

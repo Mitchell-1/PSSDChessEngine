@@ -26,8 +26,6 @@ struct MoveList {
                 }
                 last = &moveList[counter];
             }
-
-        MoveList(Move MoveList[]);
         Move * begin() {return moveList;}
         Move * end() {return last;}
         const Move* begin() const {return moveList;}

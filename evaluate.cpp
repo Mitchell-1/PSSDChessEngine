@@ -9,8 +9,11 @@ int PieceValues[5]  = {
     900  // queen
 };
 
-int Evaluate::evaluateBoard(const Game &game, int moves){
+int Evaluate::evaluateBoard(const Game &game, int verbosity, int moves) {
     if (moves == 0) {
+        if (verbosity >= 1) {
+            std::cout << "Optional Moves passed, returning mate or stalemate" << std::endl;
+        }
         if (game.turn == 0) {
             if (game.whiteBoards[5] & game.blackAttack) {
                 return INT_MIN; // white to move and in check with no legal moves, black mates
@@ -26,8 +29,6 @@ int Evaluate::evaluateBoard(const Game &game, int moves){
     if (game.movesWithoutCapture >= 100) {
         return 0; // fifty move rule draw
     }
-    
-
         int materialScore = 0;
 
         // Count the material score for both sides, adding for white and subtracting for black.
@@ -47,12 +48,11 @@ int Evaluate::evaluateBoard(const Game &game, int moves){
                 blackPieceBB &= blackPieceBB - 1; // clear the least significant bit
             }
         }
-        //std::cout << " Material Score: " << materialScore << std::endl;
         // Positional score is calculated by using the positional tables for each piece
         // as defined in Helpers.h. The tables are indexed by the square of each piece.
         int positionalScore = 0;
         bool endgame = bitboardHelpers::getBitCount(game.whiteBoard) < 5 || bitboardHelpers::getBitCount(game.blackBoard) < 5 || bitboardHelpers::getBitCount(game.mainBoard) < 20;
-        for (int piece = 0; piece < 1; piece++) {
+        for (int piece = 0; piece < 6; piece++) {
             Bitboard whitePieceBB = game.whiteBoards[piece];
             Bitboard blackPieceBB = game.blackBoards[piece];
             const int *positionTableW = myEngine::getPiecePositionTable(piece, 0, endgame);
@@ -66,14 +66,17 @@ int Evaluate::evaluateBoard(const Game &game, int moves){
                 positionalScore -= positionTableB[square];
             }
         }
-        //std::cout << " Positional Score: " << positionalScore << std::endl;
         // Attack score is calculated by counting the number of squares attacked by each side
         // and adding a small bonus for each square attacked.
         int attackScore = 0;
         attackScore += bitboardHelpers::getBitCount(game.whiteAttack) * 5;
         attackScore -= bitboardHelpers::getBitCount(game.blackAttack) * 5;
 
-        //std::cout << " Attack Score: " << attackScore << std::endl;
+        if (verbosity >= 1) {
+            std::cout << "Material Score: " << materialScore << std::endl;
+            std::cout << "Positional Score: " << positionalScore << std::endl;
+            std::cout << "Attack Score: " << attackScore << std::endl;
+        }
 
-        return materialScore + positionalScore + attackScore + (game.turn == 0 ? 20 : -20); // small bonus for side to move
+        return materialScore + positionalScore + attackScore; // small bonus for side to move
 };

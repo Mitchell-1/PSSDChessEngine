@@ -25,10 +25,16 @@ class Move {
     protected:
         uint32_t data;
     public:
+        int value;
         Move() : data(0) {}
         Move(uint32_t d): data(d) {}
         Move(Square from, Square to, int promo, int flag, int type, int capture, bool colour, bool passantable){
-            uint8_t score = type + (capture - type) + promo;
+            value = 0;
+            if (capture != 7) {
+                value += 100 * (2 + capture - (1+type));
+            }
+            value += flag == 1 ? promo * 100 : 0;
+            value += passantable ? 50 : 0;
             data = (passantable << 23) + (colour << 22) + (capture << 19) + (type << 16) + (flag << 14) + (promo << 12)+(to << 6)+ from;
         }
         void updateData(int newData, int offset, int size) {
@@ -68,6 +74,8 @@ class Move {
         }
         uint32_t raw() const { return data; }
         //operator =(const Move& move2) {return move}
+        bool operator >(const Move& move2) const {return this->value > move2.value;};
+        bool operator <(const Move& move2) const {return this->value < move2.value;};
 };
 
 
