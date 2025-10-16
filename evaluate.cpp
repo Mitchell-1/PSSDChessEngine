@@ -1,4 +1,5 @@
 #include "evaluate.h"
+#include <climits>
 
 int PieceValues[5]  = {
     100, // pawn
