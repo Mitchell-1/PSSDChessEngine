@@ -44,6 +44,7 @@ class Game {
         void updateAttacks(Move move);
         bool makeMove(Move& move);
         void unMakeMove(Move& move);
+        bool inCheck(bool colour);
         bool isMoveOk(Move& move);
         void recieveMove(std::string moveStr);
         void initHash();

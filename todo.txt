@@ -14,7 +14,6 @@ Potential implementations:
 
 - Implement default openings
 
-- Implement "Capture" type feature for move generation/searching.
 
 Done:
 - Implement position hashing
@@ -25,3 +24,5 @@ Done:
 - Implement a isMoveOk function that is similar to makeMove but only checks if a move is fully legal to stop unnecessary repeated calls to makeMove. 
 
 - Implement a counter to test how many nodes are searched/evaluated
+
+- Implement "Capture" type feature for move generation/searching.

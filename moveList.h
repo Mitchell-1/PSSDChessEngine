@@ -28,6 +28,8 @@ struct MoveList {
             }
 
         MoveList(Move MoveList[]);
+        Move * begin() {return moveList;}
+        Move * end() {return last;}
         const Move* begin() const {return moveList;}
         const Move* end() const {return last;}
         size_t size() const {return last - moveList;}

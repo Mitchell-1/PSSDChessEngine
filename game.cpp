@@ -108,6 +108,9 @@ void Game::fenToBitBoards(std::string fenPosition) {
     }
     updateMainBoards();
     this->genAttacks();
+    this->turn = !this->turn;
+    this-> genAttacks();
+    this->turn = !this->turn;
 }
 
 //compiles any changes to the individual boards into the total board.
@@ -577,24 +580,7 @@ bool Game::makeMove(Move& move){
         } else {
             movesWithoutCapture++;
         }
-
-        // If position is illegal undo changes and return true.
-        this->genAttacks();
-        if (blackBoards[5] & whiteAttack) {
-            updateBoard(blackBoards[move.type()], to, from);
-            if (capture != 7) {
-                if (capture == 6) {
-                    updateBoard(whiteBoards[6], to);
-                    updateBoard(whiteBoards[0], to+8);
-                } else {
-                    setBit(whiteBoards[capture], to);
-                }
-            }
-            this->updateMainBoards();
-            this->genAttacks();
-            this->turn = this->turn ? 0 : 1;
-            return true;
-        }
+        
         
         
 
@@ -660,8 +646,7 @@ bool Game::makeMove(Move& move){
         } else if (WhitePHistory.size() != 0) {
             WhitePHistory.push_back(0);
         }
-        
-
+        this->genAttacks();
     } else {
         // Update the White board by the move 
         // and white board by any capture.
@@ -681,28 +666,6 @@ bool Game::makeMove(Move& move){
         } else {
             movesWithoutCapture++;
         }
-
-        // If position is illegal undo changes and return true.
-        this->genAttacks();
-        if (whiteBoards[5] & blackAttack) {
-            updateBoard(whiteBoards[move.type()], to, from);
-            if (capture != 7) {
-                if (capture == 6) {
-                    updateBoard(blackBoards[6], to);
-                    updateBoard(blackBoards[0], to-8);
-                } else {
-                    setBit(blackBoards[capture], to);
-                }
-            }
-            
-            this->updateMainBoards();
-            this->genAttacks();
-            this->turn = this->turn ? 0 : 1;
-            return true;
-        }
-        
-        
-
         // Check if the move broke any castling rights
         if (canBlackKingCastle && capture == 3 && to == 63) {
             canBlackKingCastle = false;
@@ -763,6 +726,8 @@ bool Game::makeMove(Move& move){
         } else if (BlackPHistory.size() != 0) {
             BlackPHistory.push_back(0);
         }
+
+        this->genAttacks();
     }
     this->updateMainBoards();
     // Generates the remaining attacks for the side not to move
@@ -889,11 +854,66 @@ void Game::unMakeMove(Move& move){
         
 }
 
+bool Game::inCheck(bool colour) {
+    Bitboard kingBB = colour ? blackBoards[5] : whiteBoards[5];
+    Bitboard attackBB;
+    if (colour) {
+        int kingSquare = getLSB(kingBB);
+        attackBB = get_bishop(kingSquare, this->mainBoard);
+        if ((whiteBoards[2] | whiteBoards[4]) & attackBB) {
+            return true;
+        }
+        attackBB = get_rook(kingSquare, this->mainBoard);
+        if ((whiteBoards[3] | whiteBoards[4]) & attackBB) {
+            return true;
+        }
+        attackBB = knightAttackMask[kingSquare];
+        if ((whiteBoards[1]) & attackBB) {
+            return true;
+        }
+        attackBB = 0;
+        if (kingSquare%8 != 0) {
+            attackBB |= oneBB << (kingSquare - 9);
+        } 
+        if (kingSquare%8 != 7) {
+            attackBB |= oneBB << (kingSquare - 7);
+        }
+        if ((whiteBoards[0]) & attackBB) {
+            return true;
+        }
+        return false;
+    } else {
+        int kingSquare = getLSB(kingBB);
+        attackBB = get_bishop(kingSquare, this->mainBoard);
+        if ((blackBoards[2] | blackBoards[4]) & attackBB){
+            return true;
+        }
+        attackBB = get_rook(kingSquare, this->mainBoard);
+        if ((blackBoards[3] | blackBoards[4]) & attackBB){
+            return true;
+        }
+        attackBB = knightAttackMask[kingSquare];
+        if ((blackBoards[1]) & attackBB) {
+            return true;
+        } 
+        attackBB = 0;
+        if (kingSquare%8 != 0) {
+            attackBB |= oneBB << (kingSquare + 7);
+        } 
+        if (kingSquare%8 != 7) {
+            attackBB |= oneBB << (kingSquare + 9);
+        }
+        if ((blackBoards[0]) & attackBB) {
+            return true;
+        }
+        return false;
+    }
+}
+
 bool Game::isMoveOk(Move& move){
     this->turn = this->turn ? 0 : 1;
-    int from, to;
-    from = move.fromSquare();
-    to = move.toSquare();
+    int from = move.fromSquare();
+    int to = move.toSquare();
     bool flag = false;
     if (move.colour()) {
         updateBoard(blackBoards[move.type()], from, to);
@@ -910,8 +930,8 @@ bool Game::isMoveOk(Move& move){
         }
 
         // If position is illegal undo changes and return true.
-        this->genAttacks();
-        if (blackBoards[5] & whiteAttack) {
+        this->updateMainBoards();
+        if (this->inCheck(1)) {
             flag = true;
         }
         updateBoard(blackBoards[move.type()], to, from);
@@ -923,7 +943,7 @@ bool Game::isMoveOk(Move& move){
                 setBit(whiteBoards[capture], to);
             }
         }
-        this->genAttacks();
+        //this->genAttacks();
         this->updateMainBoards();
         this->turn = this->turn ? 0 : 1;
     } else {
@@ -941,8 +961,9 @@ bool Game::isMoveOk(Move& move){
         }
 
         // If position is illegal undo changes and return true.
-        this->genAttacks();
-        if (whiteBoards[5] & blackAttack) {
+        //this->genAttacks();
+        this->updateMainBoards();
+        if (this->inCheck(0)) {
             flag = true;
         }
         updateBoard(whiteBoards[move.type()], to, from);
@@ -956,7 +977,7 @@ bool Game::isMoveOk(Move& move){
             }
             
             this->updateMainBoards();
-            this->genAttacks();
+            //this->genAttacks();
             this->turn = this->turn ? 0 : 1;
     }
     return flag;
@@ -1035,7 +1056,6 @@ void Game::recieveMove(std::string moveStr){
     }
 }
 
-
 void Game::initHash() {
     for (int i = 0; i < 781; i++) {
         hashes[i] = getRandomU64();
@@ -1096,3 +1116,4 @@ void Game::updateHash(Move& move) {
     }
     hash = hash ^ hashes[769];
 };
+
