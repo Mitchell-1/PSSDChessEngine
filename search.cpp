@@ -45,7 +45,7 @@ namespace search_impl {
         best.move = *moves.begin();
         if (maximise){
             best.score = INT32_MIN;
-        }else{
+        } else {
             best.score = INT32_MAX;
         }
 
