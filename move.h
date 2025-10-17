@@ -31,7 +31,7 @@ class Move {
         Move(Square from, Square to, int promo, int flag, int type, int capture, bool colour, bool passantable){
             value = 0;
             if (capture != 7) {
-                value += 100 * (2 + capture - (1+type));
+                value += 100 * (1 + capture - (1+type));
             }
             value += flag == 1 ? promo * 100 : 0;
             value += passantable ? 50 : 0;

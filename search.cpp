@@ -1,5 +1,6 @@
 #include "search.h"
 #include "evaluate.h"
+#include "transpositionTable.h"
 
 namespace search_impl {
     // return pair<score, move>
@@ -8,8 +9,8 @@ namespace search_impl {
         Move move;
     };
 
-    std::unordered_map<uint64_t, int> transpositionTable;
-    
+    TranspositionTable TTable = TranspositionTable(0);
+    int numEntries;
 
     static uint64_t nodesSearched = 0;
     static uint64_t cutoffs = 0;
@@ -33,7 +34,7 @@ namespace search_impl {
         return 0;
     }
 
-    ScoredMove quiescence(Game &game, int alpha, int beta, int extensions) { 
+    ScoredMove quiescence(Game &game, int alpha, int beta, int extensions, int depthFromRoot) { 
         int startEval = Evaluate::evaluateBoard(game, 0);
 
         if (extensions >= maxExtension) {
@@ -51,17 +52,26 @@ namespace search_impl {
         for (const Move *it = moves.begin(); it != moves.end(); ++it){
             Move m = *it;
             game.makeMove(m);
-
-            ScoredMove score = quiescence(game, alpha, beta, extensions + 1);
+            uint64_t tempHash = game.hash;
+            game.updateHash(m);
+            int Entry = TTable.lookupHash(game.hash, extensions, alpha, beta);
+            if (Entry != TTable.failedLookup) {
+                hashHits++;
+                score = Entry;
+            } else {
+                score = quiescence(game, alpha, beta, extensions + 1, depthFromRoot + 1).score;
+                TTable.storeHash(game.hash, extensions, TTable.exactScore, score);
+            }
             game.unMakeMove(m);
+            game.hash = tempHash;
             if (game.turn) {
-                if (score.score < bestScore) {
-                    bestScore = score.score;
+                if (score < bestScore) {
+                    bestScore = score;
                 }
                 beta = std::min(beta, bestScore);
             } else {
-                if (score.score > bestScore) {
-                    bestScore = score.score;
+                if (score > bestScore) {
+                    bestScore = score;
                 }
                 alpha = std::max(alpha, bestScore);
             }
@@ -73,7 +83,7 @@ namespace search_impl {
         return {bestScore, 0};
     }
     
-    ScoredMove minimax(Game &game, int depth, int alpha, int beta, int extensions) {
+    ScoredMove minimax(Game &game, int depth, int alpha, int beta, int extensions, int depthFromRoot) {
         // threefold repetition detection
         size_t histSize = game.moveHistory.size() - 1;
         if (histSize >= 9) {
@@ -87,12 +97,13 @@ namespace search_impl {
         // at depth 0 evaluate and return
         if (depth == 0){
             if (extensions <= maxExtension) {
-                return quiescence(game, alpha, beta, extensions + 1);
+                return quiescence(game, alpha, beta, extensions + 1, depthFromRoot + 1);
             }
             nodesSearched++;
             return ScoredMove{Evaluate::evaluateBoard(game, 0), 0}; //Evaluation and Null move
         }
         MoveList<LEGAL> moves(game);
+        std::stable_sort(moves.begin(), moves.end(), std::greater<Move>());
         size_t n = moves.size();
         if (n == 0){
             // if no legal moves, return evaluation
@@ -110,20 +121,21 @@ namespace search_impl {
             best.score = INT32_MAX;
         }
         ScoredMove child;
+        int evalBound = TTable.upperBound;
         for (const Move *it = moves.begin(); it != moves.end(); ++it){
             Move m = *it;
             game.makeMove(m);
             int tempHash = game.hash;
             game.updateHash(m);
-            if (transpositionTable.find(game.hash) != transpositionTable.end()) {
+            int Entry = TTable.lookupHash(game.hash, depth, alpha, beta);
+            if (Entry != TTable.failedLookup) {
                 hashHits++;
-                child.score = transpositionTable[game.hash];
+                child.score = Entry;
             } else {
                 game.moveHistory.push_back(game.hash);
                 int extension = getMoveExtension(game, m);
                 extension = extensions + extension <= maxExtension ? extension : 0;
-                child = minimax(game,depth - 1 + extension, alpha, beta, extension + extensions);
-                transpositionTable[game.hash] = child.score;
+                child = minimax(game,depth - 1 + extension, alpha, beta, extension + extensions, depthFromRoot + 1);
                 game.moveHistory.pop_back();
             }
             // revert
@@ -133,6 +145,7 @@ namespace search_impl {
                 if (child.score > best.score){
                     best.score = child.score;
                     best.move = m;
+                    evalBound = TTable.exactScore;
                 }
                 alpha = std::max(alpha, best.score); // update alpha
             } else {
@@ -144,11 +157,13 @@ namespace search_impl {
             }
             // alpha-beta cutoff
             if (alpha >= beta){
+                TTable.storeHash(game.hash, depth + 1, TTable.lowerBound, alpha);
                 cutoffs++;
                 break;
             }
             
         }
+        TTable.storeHash(game.hash, depth + 1, evalBound, best.score);
         return best;
     }
 
@@ -166,14 +181,19 @@ namespace search_impl {
 };
 
 Search::Search(int verbose) : verbosity(verbose) {
-    search_impl::transpositionTable.reserve(8388608); //1mB of entries
+    int sizeMB = 64; // default 64 MB transposition table
+    int sizeBytes = sizeMB * 1024 * 1024;
+    int numEntries = sizeBytes / sizeof(uint64_t);
+    search_impl::numEntries = numEntries;
+    search_impl::TTable = TranspositionTable(numEntries);
 }
 
-Move Search::FindBestMove(Game &game, int depth) {
-    if (depth <= 0) {
+Move Search::FindBestMove(Game &game, int depthMax) {
+    if (depthMax <= 0) {
         return Move();
     }
-    search_impl::maxExtension = 0; // set max extension to depth to avoid infinite extensions
+    search_impl::maxExtension = 3; // set max extension to depth to avoid infinite extensions\
+
     uint64_t nodes, co, hashHits;
     auto start = std::chrono::high_resolution_clock::now();
 
@@ -186,44 +206,59 @@ Move Search::FindBestMove(Game &game, int depth) {
         return Move(); // no legal moves, return null move
     }
 
-    std::stable_sort(moves.begin(), moves.end(), std::greater<Move>());
+    
     search_impl::ScoredMove best;
-    best.move = *moves.begin();
-    if (game.turn){
-        best.score = INT32_MAX;
-    } else {
-        best.score = INT32_MIN;
-    }
-    for (const Move *it = moves.begin(); it != moves.end(); ++it){
-            Move m = *it;
-            game.makeMove(m);
-            int tempHash = game.hash;
-            game.updateHash(m);
-            game.moveHistory.push_back(game.hash);
-            search_impl::ScoredMove child = search_impl::minimax(game,depth - 1, alpha, beta, 0);
-            game.unMakeMove(m);
-            game.hash = tempHash;
-            game.moveHistory.pop_back();
+    int depthMin = depthMax > 2 ? 2 : depthMax;
+    for (int depth = depthMin; depth <= depthMax; depth++){
+        std::cout << "Searching at depth " << depth << "...\n";
+        std::stable_sort(moves.begin(), moves.end(), std::greater<Move>());
+        best.move = *moves.begin();
+        if (game.turn){
+            best.score = INT32_MAX;
+        } else {
+            best.score = INT32_MIN;
+        }
+        for (Move *it = moves.begin(); it != moves.end(); ++it){
+                Move m = *it;
+                game.makeMove(m);
+                int tempHash = game.hash;
+                game.updateHash(m);
+                game.moveHistory.push_back(game.hash);
+                search_impl::ScoredMove child = search_impl::minimax(game,depth - 1, alpha, beta, 0, 1);
+                game.unMakeMove(m);
+                game.hash = tempHash;
+                game.moveHistory.pop_back();
 
-            printMove(m);
-            std::cout << " Score: " << child.score << std::endl;
+                printMove(m);
+                std::cout << " Score: " << child.score << std::endl;
 
-            if (game.turn) {
-                if (child.score < best.score){
-                    best.score = child.score;
-                    best.move = m;
+                if (game.turn) {
+                    if (child.score < best.score){
+                        best.score = child.score;
+                        best.move = m;
+                    }
+                    beta = std::min(beta, best.score);
+                } else {
+                    if (child.score > best.score){
+                        best.score = child.score;
+                        best.move = m;
+                    }
+                    alpha = std::max(alpha, best.score);
                 }
-                beta = std::min(beta, best.score);
-            } else {
-                if (child.score > best.score){
-                    best.score = child.score;
-                    best.move = m;
-                }
-                alpha = std::max(alpha, best.score);
+            it->value = child.score; // update move ordering value
+        }
+        if (game.turn) {
+            if (best.score == INT32_MIN) {
+                break; // checkmate found
             }
+        } else {
+            if (best.score == INT32_MAX) {
+                break; // checkmate found
+            }
+        }
     }
     
-    
+
     if (verbosity > 0) {
         search_impl::getStats(nodes, co, hashHits);
         std::cerr << "Search nodes: " << nodes << " Prunes: " << co << " Hash hits: " << hashHits << std::endl;

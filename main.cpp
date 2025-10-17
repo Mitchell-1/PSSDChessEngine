@@ -102,8 +102,8 @@ void UCI_Listen(Game & game, int verbosity) {
                 std::cout << "bestmove (none)" << std::endl;
                 continue;
             }
-        } else if (input.substr(0, 8) == "makeMove") {
-            std::string moveStr = input.substr(9);
+        } else if (input.substr(0, 4) == "move") {
+            std::string moveStr = input.substr(5);
             game.recieveMove(moveStr);
         } else if (input.substr(0, 11) == "perftSuite") {
             perftSuite(game);

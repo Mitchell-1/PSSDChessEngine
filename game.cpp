@@ -998,7 +998,7 @@ void Game::recieveMove(std::string moveStr){
     Square targetSquare = squareToInt(strTargetSquare);
     uint8_t type = 0;
     uint8_t colour = 0;
-    uint8_t capture = 8;
+    uint8_t capture = 7;
     bool check = 0;
     uint8_t promotion = 0;
     bool passantable = 0;
@@ -1022,7 +1022,7 @@ void Game::recieveMove(std::string moveStr){
                 castle = 1;
             }
         }
-        if ((blackBoard & (uint64_t(1) << targetSquare)) | (blackBoards[6] & (uint64_t(1) << targetSquare)) ){
+        if ((blackBoard & (uint64_t(1) << targetSquare)) || (blackBoards[6] & (uint64_t(1) << targetSquare)) ){
             capture = getPieceBySquare((uint64_t(1) << targetSquare), 1);
         }
     } else if (blackBoard & (uint64_t(1) << initSquare)){
@@ -1044,7 +1044,7 @@ void Game::recieveMove(std::string moveStr){
                 castle = 1;
             }
         }
-        if ((whiteBoard & (uint64_t(1) << targetSquare)) | (whiteBoards[6] & (uint64_t(1) << targetSquare))){
+        if ((whiteBoard & (uint64_t(1) << targetSquare)) || (whiteBoards[6] & (uint64_t(1) << targetSquare))){
             capture = getPieceBySquare((uint64_t(1) << targetSquare), 0);
         }
     } else {
@@ -1058,10 +1058,11 @@ void Game::recieveMove(std::string moveStr){
         flag = castle + 1;
     }
     Move newMove = Move(initSquare, targetSquare, promotion, flag, type, capture, colour, passantable);
-    if (makeMove(newMove)){
+    if (isMoveOk(newMove)){
         printf("Input a valid move\n");
         return;
     }
+    this->makeMove(newMove);
 }
 
 void Game::initHash() {

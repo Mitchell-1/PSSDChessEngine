@@ -11,6 +11,7 @@ Potential implementations:
 Done:
 - Implement position hashing
     - implement 3 move repetition draw
+    - Implement transposition table for faster searching
 
 - Update Evaluate function to include attacking in the score.
 
@@ -19,8 +20,5 @@ Done:
 - Implement a counter to test how many nodes are searched/evaluated
 
 - Implement "Capture" type feature for move generation/searching.
-
-- Implement position hashing
-    - Implement transposition table for faster searching
 
 - Implement alpha-beta pruning for move generation. 
