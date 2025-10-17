@@ -15,7 +15,7 @@ namespace search_impl {
     static uint64_t nodesSearched = 0;
     static uint64_t cutoffs = 0;
     static uint64_t hashHits = 0;
-    int maxExtension = 8;
+    int maxExtension = 0;
 
     int getMoveExtension(Game &game, const Move &move) {
         if (game.inCheck(game.turn)) {
@@ -102,13 +102,16 @@ namespace search_impl {
             nodesSearched++;
             return ScoredMove{Evaluate::evaluateBoard(game, 0), 0}; //Evaluation and Null move
         }
+        
         MoveList<LEGAL> moves(game);
         std::stable_sort(moves.begin(), moves.end(), std::greater<Move>());
         size_t n = moves.size();
+        
         if (n == 0){
             // if no legal moves, return evaluation
             return ScoredMove{Evaluate::evaluateBoard(game, 0, 0), 0}; //Evaluation with optional tag and Null move
         }
+        
         bool sideToMove = game.turn; // 0 = white, 1 = black
 
         // for white we want to maximise, for black we minimise
@@ -206,18 +209,28 @@ Move Search::FindBestMove(Game &game, int depthMax) {
         return Move(); // no legal moves, return null move
     }
 
-    
     search_impl::ScoredMove best;
-    int depthMin = depthMax > 2 ? 2 : depthMax;
+    search_impl::ScoredMove currBest;
+    best.move = *moves.begin();
+    currBest.move = *moves.begin();
+    int depthMin = depthMax > 2 ? 1 : depthMax;
+    if (game.turn){
+            best.score = INT32_MAX;
+            currBest.score = INT32_MAX;
+    } else {
+            best.score = INT32_MIN;
+            currBest.score = INT32_MIN;
+    }
     for (int depth = depthMin; depth <= depthMax; depth++){
+        alpha = INT32_MIN;
+        beta = INT32_MAX;
+        if (game.turn){
+            currBest.score = INT32_MAX;
+        } else {
+            currBest.score = INT32_MIN;
+        }
         std::cout << "Searching at depth " << depth << "...\n";
         std::stable_sort(moves.begin(), moves.end(), std::greater<Move>());
-        best.move = *moves.begin();
-        if (game.turn){
-            best.score = INT32_MAX;
-        } else {
-            best.score = INT32_MIN;
-        }
         for (Move *it = moves.begin(); it != moves.end(); ++it){
                 Move m = *it;
                 game.makeMove(m);
@@ -228,33 +241,24 @@ Move Search::FindBestMove(Game &game, int depthMax) {
                 game.unMakeMove(m);
                 game.hash = tempHash;
                 game.moveHistory.pop_back();
-
-                printMove(m);
-                std::cout << " Score: " << child.score << std::endl;
-
                 if (game.turn) {
-                    if (child.score < best.score){
-                        best.score = child.score;
-                        best.move = m;
+                    if (child.score < currBest.score){
+                        currBest.score = child.score;
+                        currBest.move = m;
                     }
-                    beta = std::min(beta, best.score);
+                    beta = std::min(beta, currBest.score);
                 } else {
-                    if (child.score > best.score){
-                        best.score = child.score;
-                        best.move = m;
+                    if (child.score > currBest.score){
+                        currBest.score = child.score;
+                        currBest.move = m;
                     }
-                    alpha = std::max(alpha, best.score);
+                    alpha = std::max(alpha, currBest.score);
                 }
             it->value = child.score; // update move ordering value
         }
-        if (game.turn) {
-            if (best.score == INT32_MIN) {
-                break; // checkmate found
-            }
-        } else {
-            if (best.score == INT32_MAX) {
-                break; // checkmate found
-            }
+        best = currBest;
+        if (best.score == INT32_MIN || best.score == INT32_MAX) {
+            break; // forced checkmate found
         }
     }
     
