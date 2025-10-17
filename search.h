@@ -7,11 +7,12 @@
 #include "perft.h"
 #include <iostream>
 #include <string>
+#include <unordered_map>
 
 class Search {
     public:
         int verbosity = 0;
-        Search(int verbose) : verbosity(verbose) {};
+        Search(int verbose);
         Move FindBestMove(Game &game, int depth);
 };
 

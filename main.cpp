@@ -63,9 +63,8 @@ void UCI_Listen(Game & game, int verbosity) {
         std::getline(std::cin, input);
         if (input == "quit") {
             break;
-        } else if (input == "isready") {
-            std::cout << "readyok" << std::endl;
         } else if (input.substr(0, 8) == "position") {
+            //Set up position from fen string or startpos
             if (input.find("startpos") != std::string::npos) {
                 game = Game("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
             } else if (input.find("fen") != std::string::npos) {
@@ -73,48 +72,46 @@ void UCI_Listen(Game & game, int verbosity) {
                 game = Game(fen);
             }
         } else if (input.substr(0, 2) == "go") {
-            int depth = 6; // default depth
+            int depth = 6; //Default depth in case none specified
             if (input.find("depth") != std::string::npos) {
                 depth = std::stoi(input.substr(input.find("depth") + 6));
             }
-
             if (input.find("perft") != std::string::npos) {
+                //Extract depth from perft command and run the test
                 depth = std::stoi(input.substr(input.find("perft") + 6));
                 printf("Format:\nColour   Piece   Start    End  Capture Promotion En-Passantable\nNodes\n\n");
                 uint64_t nodes = perft<true>(game, depth, 1);
                 continue;
             }
-
-            // Standard notation features a lot more params to move gen that will be handeled here.
-            // But for now just do the algorithm and we can worry about adding more features later.
-
-
+            //Search for best move at the given depth and output it.
             Move bestMove = Searcher.FindBestMove(game, depth);
-            
-
             if (bestMove.raw() != 0) {
-                //std::cout << myEngine::STC[bestMove.fromSquare()]  << myEngine::STC[bestMove.toSquare()] << std::endl;
                 printMove(bestMove);
                 game.makeMove(bestMove);
                 game.updateHash(bestMove);
                 game.moveHistory.push_back(game.hash);
             } else {
+                // No legal move found (checkmate, stalemate, or invalid position)
                 std::cout << "bestmove (none)" << std::endl;
                 continue;
             }
-        } else if (input.substr(0, 8) == "makeMove") {
-            std::string moveStr = input.substr(9);
+        } else if (input.substr(0, 4) == "move") {
+            // Receive and make a move in UCI format
+            std::string moveStr = input.substr(5);
             game.recieveMove(moveStr);
         } else if (input.substr(0, 11) == "perftSuite") {
+            // Run the perft suite tests
             perftSuite(game);
-        } else { 
-            std::cout << "Unknown command: " << input << std::endl;
+        } else if (input.substr(0, 4) == "test") {
+            // Return the evaluation of the current position
+            int eval = Evaluate::evaluateBoard(game, 1);
+            std::cout << "Evaluation of current position: " << eval << std::endl;
         }
-            
     }
 };
 
 int main() {
+    // Pre-generate move tables for sliding pieces
     genPossibleBishopMoves();
     genPossibleRookMoves();
     std::string startingFen;

@@ -6,6 +6,8 @@ Bitboard * genKnightAttackMask() {
     Bitboard attackMask = 0;
     for (int square = 0; square < 64; square++) {
         Bitboard squareBB = oneBB << square;
+        // Depending on the square's position, add valid knight moves
+        // to avoid moves wrapping around the board edges.
         if (square %8 != 7) {
             attackMask |= squareBB << (NORTH + NORTH_EAST); // 17
             attackMask |= squareBB >> -(SOUTH + SOUTH_EAST); // -15

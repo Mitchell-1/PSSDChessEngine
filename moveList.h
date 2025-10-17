@@ -15,6 +15,8 @@ struct MoveList {
     public:
         MoveList();
         explicit MoveList(Game& position) : 
+            // Generate all moves of the specified type into a temporary list
+            // then test for legality before adding to the final move list.
             tempLast(generate<Type>(position, tempMoveList)) {
                 Move* move;
                 int counter = 0;
@@ -26,8 +28,7 @@ struct MoveList {
                 }
                 last = &moveList[counter];
             }
-
-        MoveList(Move MoveList[]);
+        // Helper functions for iterating over the move list and sorting.
         Move * begin() {return moveList;}
         Move * end() {return last;}
         const Move* begin() const {return moveList;}
@@ -39,11 +40,8 @@ struct MoveList {
             for (int i = 0; i < this->size();i++){
                 printf(" %d  -   ", i);
                 myEngine::printMove(moveList[i]);
-                //getchar();
-                //exit(0);
             }
             printf("Done Printing Moves \n");
-            //exit(0);
         }
     };
 
