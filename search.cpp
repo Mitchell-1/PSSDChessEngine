@@ -9,14 +9,19 @@ namespace search_impl {
         Move move;
     };
 
-    TranspositionTable TTable = TranspositionTable(0);
-    int numEntries;
+    // All global variables necessary for the search algorithm.
 
+    //Transposition Table for storing previously evaluated positions.
+    TranspositionTable TTable = TranspositionTable(0);
+
+    int numEntries;
     static uint64_t nodesSearched = 0;
     static uint64_t cutoffs = 0;
     static uint64_t hashHits = 0;
     int maxExtension = 0;
 
+    // Determine if a move warrants a search extension.
+    // Returns the number of potential moves to extend by.
     int getMoveExtension(Game &game, const Move &move) {
         if (game.inCheck(game.turn)) {
             return 1;
@@ -34,31 +39,39 @@ namespace search_impl {
         return 0;
     }
 
+    // Quiescence search to evaluate all capture moves and positions until there are none remaining.
     ScoredMove quiescence(Game &game, int alpha, int beta, int extensions, int depthFromRoot) { 
+        // Evaluate the current board position.
+        // Enables avoiding positions that are worse than the current. 
         int startEval = Evaluate::evaluateBoard(game, 0);
-
         if (extensions >= maxExtension) {
             nodesSearched++;
             return ScoredMove{startEval, 0};
         }
 
         int bestScore = startEval;
+        // Uses typing to only generate capture moves.
         MoveList<CAPTURES> moves(game);
         if (moves.size() == 0) {
             nodesSearched++;
             return ScoredMove{bestScore, 0}; // no captures, return evaluation
         }
         int score;
+        // minimax algorithm over capture moves only.
+        // Uses alpha beta pruning to cut off branches that won't affect the final decision.
         for (const Move *it = moves.begin(); it != moves.end(); ++it){
             Move m = *it;
             game.makeMove(m);
             uint64_t tempHash = game.hash;
             game.updateHash(m);
+            // Test transposition table for previously evaluated positions.
             int Entry = TTable.lookupHash(game.hash, extensions, alpha, beta);
             if (Entry != TTable.failedLookup) {
                 hashHits++;
                 score = Entry;
             } else {
+                // Position not found in table, continue quiescence search.
+                // Store result in transposition table.
                 score = quiescence(game, alpha, beta, extensions + 1, depthFromRoot + 1).score;
                 TTable.storeHash(game.hash, extensions, TTable.exactScore, score);
             }
@@ -130,20 +143,25 @@ namespace search_impl {
             game.makeMove(m);
             int tempHash = game.hash;
             game.updateHash(m);
+            // Test transposition table for previously evaluated positions.
             int Entry = TTable.lookupHash(game.hash, depth, alpha, beta);
             if (Entry != TTable.failedLookup) {
                 hashHits++;
                 child.score = Entry;
             } else {
+                // Position not found in table, continue minimax search.
+                // Store result in transposition table.
                 game.moveHistory.push_back(game.hash);
                 int extension = getMoveExtension(game, m);
                 extension = extensions + extension <= maxExtension ? extension : 0;
                 child = minimax(game,depth - 1 + extension, alpha, beta, extension + extensions, depthFromRoot + 1);
                 game.moveHistory.pop_back();
             }
-            // revert
+            // Revert the position to before the move was made.
             game.unMakeMove(m);
             game.hash = tempHash;
+            // Update best score and move based on minimax principle.
+            // Update alpha and beta values for pruning.
             if (maximise) {
                 if (child.score > best.score){
                     best.score = child.score;
@@ -160,6 +178,7 @@ namespace search_impl {
             }
             // alpha-beta cutoff
             if (alpha >= beta){
+                // Position w
                 TTable.storeHash(game.hash, depth + 1, TTable.lowerBound, alpha);
                 cutoffs++;
                 break;
@@ -184,6 +203,7 @@ namespace search_impl {
 };
 
 Search::Search(int verbose) : verbosity(verbose) {
+    // Initialize transposition table with specified size.
     int sizeMB = 64; // default 64 MB transposition table
     int sizeBytes = sizeMB * 1024 * 1024;
     int numEntries = sizeBytes / sizeof(uint64_t);
@@ -195,7 +215,7 @@ Move Search::FindBestMove(Game &game, int depthMax) {
     if (depthMax <= 0) {
         return Move();
     }
-    search_impl::maxExtension = 3; // set max extension to depth to avoid infinite extensions\
+    search_impl::maxExtension = 3; // set max extension to depth to avoid infinite extensions
 
     uint64_t nodes, co, hashHits;
     auto start = std::chrono::high_resolution_clock::now();
@@ -209,11 +229,15 @@ Move Search::FindBestMove(Game &game, int depthMax) {
         return Move(); // no legal moves, return null move
     }
 
+    // Initialize best move and score tracking.
+    // currBest is used to track the best move at the current depth.
+    // Higher depth searches will update best with the most recent currBest.
     search_impl::ScoredMove best;
     search_impl::ScoredMove currBest;
     best.move = *moves.begin();
     currBest.move = *moves.begin();
     int depthMin = depthMax > 2 ? 1 : depthMax;
+    // Set initial best scores based on side to move.
     if (game.turn){
             best.score = INT32_MAX;
             currBest.score = INT32_MAX;
@@ -221,6 +245,9 @@ Move Search::FindBestMove(Game &game, int depthMax) {
             best.score = INT32_MIN;
             currBest.score = INT32_MIN;
     }
+    // Iterative deepening search from depthMin to depthMax.
+    // At each depth, the best move found is stored.
+    // This allows for progressively deeper searches and better move ordering.
     for (int depth = depthMin; depth <= depthMax; depth++){
         alpha = INT32_MIN;
         beta = INT32_MAX;
@@ -229,8 +256,12 @@ Move Search::FindBestMove(Game &game, int depthMax) {
         } else {
             currBest.score = INT32_MIN;
         }
-        std::cout << "Searching at depth " << depth << "...\n";
+        // Stable sort moves based on their heuristic values.
+        // Guarantees that moves with the same value maintain their relative order.
         std::stable_sort(moves.begin(), moves.end(), std::greater<Move>());
+        // Iterate through all legal moves to find the best one at the current depth.
+        // Uses minimax with alpha-beta pruning.
+        // Updates move ordering values based on search results.
         for (Move *it = moves.begin(); it != moves.end(); ++it){
                 Move m = *it;
                 game.makeMove(m);
@@ -263,6 +294,7 @@ Move Search::FindBestMove(Game &game, int depthMax) {
     }
     
 
+    // If verbosity is enabled, print search statistics.
     if (verbosity > 0) {
         search_impl::getStats(nodes, co, hashHits);
         std::cerr << "Search nodes: " << nodes << " Prunes: " << co << " Hash hits: " << hashHits << std::endl;

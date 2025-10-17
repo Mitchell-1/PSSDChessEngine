@@ -13,7 +13,6 @@ class Evaluate {
         
     public:
         Evaluate() {};
-        std::vector<int> prevPositionTable;
         static int evaluateBoard(const Game &game, int verbosity , int moves = 1);
 };
 

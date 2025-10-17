@@ -128,6 +128,10 @@ namespace myEngine {
     void printMove(Move);
     int squareToInt(std::string square);
 
+    // Piece-square tables
+    // values are formatted from the perspective of Black to preserve square symmetry,
+    // so White's tables are the reverse of what is seen.
+
     constexpr int BlackPawnPositionBB[64] = {
         0,  0,  0,  0,  0,  0,  0,  0,
         50, 50, 50, 50, 50, 50, 50, 50,
@@ -139,6 +143,9 @@ namespace myEngine {
         0,  0,  0,  0,  0,  0,  0,  0
     };
 
+    // Generate White pawn table by reversing Black pawn table
+    // to prevent manual errors and preserve symmetry.
+    // Done at compile time to avoid runtime overhead.
     inline int WhitePawnPositionBB[64];
     inline const auto WP = []() constexpr {
     for(int i = 0; i < 64; ++i) WhitePawnPositionBB[i] = BlackPawnPositionBB[56 - (i/8)*8 + i%8]; 

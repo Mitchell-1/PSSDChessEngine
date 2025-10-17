@@ -12,6 +12,8 @@ void Game::fenToBitBoards(std::string fenPosition) {
             next = next - '0';
             square = square + int(next);
         } else {
+            // If the character is not a digit, it must be a piece.
+            // Determine which piece and set the corresponding bitboard.
             switch (myEngine::hashing(next))
             {
             case 0:
@@ -72,6 +74,8 @@ void Game::fenToBitBoards(std::string fenPosition) {
         fenPosition.erase(0, 1);
         next = fenPosition[0];
     }
+
+    // Read in turn, castling rights and possible en passant square.
     fenPosition.erase(0, 1);
     next = fenPosition[0];
     if (next == 'w') {
@@ -107,15 +111,18 @@ void Game::fenToBitBoards(std::string fenPosition) {
         }
     }
     updateMainBoards();
+    // Generate initial attacks for both sides.
+    // Turn is flipped as genAttacks only generates attacks for the side not to move.
     this->genAttacks();
-    this->turn = !this->turn;
-    this-> genAttacks();
-    this->turn = !this->turn;
+    this->turn = this->turn ? 0 : 1;
+    this->genAttacks();
+    this->turn = this->turn ? 0 : 1;
 }
 
-//compiles any changes to the individual boards into the total board.
+// Compiles any changes to the individual boards into the total board.
 void Game::updateMainBoards(){
 
+    // Update the aggregate bitboards for both sides and the main board.
     whiteBoard = ((whiteBoards[0] | whiteBoards[1] | whiteBoards[2] | 
                    whiteBoards[3] | whiteBoards[4] | whiteBoards[5]));
     blackBoard = ((blackBoards[0] | blackBoards[1] | blackBoards[2] | 
@@ -123,9 +130,11 @@ void Game::updateMainBoards(){
     mainBoard = ((whiteBoard | blackBoard));
 }
 
-//returns the piece-index value of the occupied square as specified by "square".
-//checks based on the colour given (0 = white, 1 = black).
+// Returns the piece-index value of the occupied square as specified by "square".
+// Checks based on the colour given (0 = white, 1 = black).
 int Game::getPieceBySquare(Bitboard square, int colour) const{
+    // Check each piece bitboard of the given colour to see which contains the square.
+    // If none are found return -1.
     if (colour == 0){
         for (int i=0; i<7; i++){
             if ((whiteBoards[i] & square) != 0){
@@ -144,308 +153,6 @@ int Game::getPieceBySquare(Bitboard square, int colour) const{
 
 using namespace bitboardHelpers;
 
-// Updates the attack bitboards for both sides after a move has been made.
-void Game::updateAttacks(Move move) {
-    int type = move.type();
-    int to = move.toSquare();
-    int from = move.fromSquare();
-    int capture = move.capture();
-    int lsb;
-    Bitboard lsbBB;
-    int typeP;
-    Bitboard attack = 0;
-    Bitboard prevAttack = 0;
-    Bitboard capturedAttack = 0;
-    Bitboard bRay, rRay;
-    if (this->debug) {
-        //printBitBoard(whiteAttack);
-    }
-    // if move is made by black
-    if (move.colour()) {
-        // If move contains a capture remove the captured
-        // piece's attacks from the board.
-        if (capture !=7) {
-            switch (capture)
-            {
-            case 0:
-                if (to%8 != 0) {
-                    capturedAttack |= oneBB << (to +7);
-                }
-                if (to%8 != 7) {
-                    capturedAttack |= oneBB << (to +9);
-                }
-                whiteAttacks[0] |= capturedAttack;
-                whiteAttacks[0] ^= capturedAttack;
-                break;
-            case 1:
-                capturedAttack = knightAttackMask[to];
-                whiteAttacks[1] |= capturedAttack;
-                whiteAttacks[1] ^= capturedAttack;
-                break;   
-            case 2:
-                capturedAttack = get_bishop(to, this->mainBoard);
-                whiteAttacks[2] |= capturedAttack;
-                whiteAttacks[2] ^= capturedAttack;
-                break;
-            case 3:
-                capturedAttack = get_rook(to, this->mainBoard);
-                whiteAttacks[3] |= capturedAttack;
-                whiteAttacks[3] ^= capturedAttack;
-                break; 
-            case 4:
-                capturedAttack = get_bishop(to, this->mainBoard);
-                capturedAttack |= get_rook(to, this->mainBoard);
-                whiteAttacks[4] |= capturedAttack;
-                whiteAttacks[4] ^= capturedAttack;
-                break; 
-            default:
-                break;
-            }
-        }
-        
-        // Update the moving piece's attacks.
-        switch (type)
-        {
-        case 0:
-            if (from%8 != 0) {
-                prevAttack |= (oneBB << (from -9));
-            }
-            if (from%8 != 7) {
-                prevAttack |= (oneBB << (from -7));
-            }
-            if (to%8 != 0) {
-                attack |= (oneBB << (to -9));
-            }
-            if (to%8 != 7) {
-                attack |= (oneBB << (to -7));
-            }
-            blackAttacks[0] ^= prevAttack;
-            blackAttacks[0] |= attack;
-            break;
-        case 1: 
-            attack = knightAttackMask[to];
-            blackAttacks[1] ^= knightAttackMask[from];
-            blackAttacks[1] |= attack;
-            break;
-        case 2: 
-            attack = get_bishop(to, this->mainBoard);
-            blackAttacks[2] ^= get_bishop(from, this->mainBoard);
-            blackAttacks[2] |= attack;
-            break;
-        case 3: 
-            attack = get_rook(to, this->mainBoard);
-            blackAttacks[3] ^= get_rook(from, this->mainBoard);
-            blackAttacks[3] |= attack;
-            break;
-        case 4: 
-            attack = get_bishop(to, this->mainBoard);
-            attack |= get_rook(to, this->mainBoard);
-            blackAttacks[4] ^= get_bishop(from, this->mainBoard);
-            blackAttacks[4] ^= get_rook(from, this->mainBoard);
-            blackAttacks[4] |= attack;
-            break;
-        case 5: 
-            attack = kingAttackMask[to];
-            blackAttacks[5] = attack;
-            break;
-        default:
-            break;
-        }
-    } else { // move is made by white
-        // If move contains a capture remove the captured
-        // piece's attacks from the board.
-        if (capture !=7) {
-                switch (capture)
-                {
-                case 0:
-                    if (to%8 != 0) {
-                        capturedAttack |= oneBB << (to +7);
-                    }
-                    if (to%8 != 7) {
-                        capturedAttack |= oneBB << (to +9);
-                    }
-                    blackAttacks[0] |= capturedAttack;
-                    blackAttacks[0] ^= capturedAttack;
-                    break;
-                case 1:
-                    capturedAttack = knightAttackMask[to];
-                    blackAttacks[1] |= capturedAttack;
-                    blackAttacks[1] ^= capturedAttack;
-                    break;   
-                case 2:
-                    capturedAttack = get_bishop(to, this->mainBoard);
-                    blackAttacks[2] |= capturedAttack;
-                    blackAttacks[2] ^= capturedAttack;
-                    break;
-                case 3:
-                    capturedAttack = get_rook(to, this->mainBoard);
-                    blackAttacks[3] |= capturedAttack;
-                    blackAttacks[3] ^= capturedAttack;
-                    break; 
-                case 4:
-                    capturedAttack = get_bishop(to, this->mainBoard);
-                    capturedAttack |= get_rook(to, this->mainBoard);
-                    blackAttacks[4] |= capturedAttack;
-                    blackAttacks[4] ^= capturedAttack;
-                    break; 
-                default:
-                    break;
-                }
-        }
-        
-        // Update the moving piece's attacks.
-        switch (type)
-        {
-        case 0:
-            if (from%8 != 0) {
-                prevAttack |= oneBB << (from +7);
-            }
-            if (from%8 != 7) {
-                prevAttack |= oneBB << (from +9);
-            }
-            if (to%8 != 0) {
-                attack |= oneBB << (to +7);
-            }
-            if (to%8 != 7) {
-                attack |= oneBB << (to +9);
-            }
-            whiteAttacks[0] ^= prevAttack;
-            whiteAttacks[0] |= attack;
-            break;
-        case 1: 
-            attack = knightAttackMask[to];
-            whiteAttacks[1] ^= knightAttackMask[from];
-            whiteAttacks[1] |= attack;
-            break;
-        case 2: 
-            attack = get_bishop(to, this->mainBoard);
-            whiteAttacks[2] ^= get_bishop(from, this->mainBoard);
-            whiteAttacks[2] |= attack;
-            break;
-        case 3: 
-            attack = get_rook(to, this->mainBoard);
-            whiteAttacks[3] ^= get_rook(from, this->mainBoard);
-            whiteAttacks[3] |= attack;
-            break;
-        case 4: 
-            attack = get_bishop(to, this->mainBoard);
-            attack |= get_rook(to, this->mainBoard);
-            whiteAttacks[4] ^= get_bishop(from, this->mainBoard);
-            whiteAttacks[4] ^= get_rook(from, this->mainBoard);
-            whiteAttacks[4] |= attack;
-            break;
-        case 5: 
-            attack = kingAttackMask[to];
-            whiteAttacks[5] = attack;
-            break;
-        default:
-            break;
-        }
-    }
-        // Add attacks for pieces on the diagonal that may 
-        // have been unblocked by the move.
-        bRay = get_bishop(from, this->mainBoard);
-        bRay &= this->mainBoard;
-        while (bRay) {
-            lsb = bitboardHelpers::getLSB(bRay);
-            lsbBB = (oneBB << lsb);
-            // Check if it is a Bishop or Queen that has 
-            // been unblocked and add it to the attacks board.
-            if(lsbBB & whiteBoards[2]){
-                whiteAttacks[2] |= get_bishop(lsb, this->mainBoard);
-            }
-            if(lsbBB & whiteBoards[4]){
-                whiteAttacks[4] |= get_bishop(lsb, this->mainBoard);
-            }
-            if(lsbBB & blackBoards[2]){
-                blackAttacks[2] |= get_bishop(lsb, this->mainBoard);
-            }
-            if(lsbBB & blackBoards[4]){
-                blackAttacks[4] |= get_bishop(lsb, this->mainBoard);
-            }
-        }
-        // Remove attacks for pieces on the diagonal that may
-        // have been blocked by the move.
-        bRay = get_bishop(to, this->mainBoard);
-        bRay &= this->mainBoard;
-        while (bRay) {
-            lsb = bitboardHelpers::getLSB(bRay);
-            lsbBB = (oneBB << lsb);
-            // Check if it is a Bishop or Queen that has
-            // been Blocked and Remove it to the attacks board.
-            if(lsbBB & whiteBoards[2]){
-                popBit(whiteAttacks[2], bishopAttackMasks[to][0]);
-                whiteAttacks[2] |= get_bishop(lsb, this->mainBoard);
-            }
-            if(lsbBB & whiteBoards[4]){
-                popBit(whiteAttacks[4], bishopAttackMasks[to][0]);
-                whiteAttacks[4] |= get_bishop(lsb, this->mainBoard);
-            }
-            if(lsbBB & blackBoards[2]){
-                popBit(blackAttacks[2], bishopAttackMasks[to][0]);
-                blackAttacks[2] |= get_bishop(lsb, this->mainBoard);
-            }
-            if(lsbBB & blackBoards[4]){
-                popBit(blackAttacks[4], bishopAttackMasks[to][0]);
-                blackAttacks[4] |= get_bishop(lsb, this->mainBoard);
-            }
-        }
-
-        // Add attacks for pieces on the rank/file that may
-        // have been unblocked by the move.
-        rRay = get_rook(from, this->mainBoard);
-        rRay &= this->mainBoard;
-        while (rRay) {
-            lsb = bitboardHelpers::getLSB(rRay);
-            lsbBB = (oneBB << lsb);
-            // Check if it is a Rook or Queen that has 
-            // been unblocked and add it to the attacks board.
-            if(lsbBB & whiteBoards[3]){
-                whiteAttacks[3] |= get_rook(lsb, this->mainBoard);
-            }
-            if(lsbBB & whiteBoards[4]){
-                whiteAttacks[4] |= get_rook(lsb, this->mainBoard);
-            }
-            if(lsbBB & blackBoards[3]){
-                blackAttacks[3] |= get_rook(lsb, this->mainBoard);
-            }
-            if(lsbBB & blackBoards[4]){
-                blackAttacks[4] |= get_rook(lsb, this->mainBoard);
-            }
-        }
-        // Remove attacks for pieces on the rank/file that may
-        // have been Blocked by the move.
-        rRay = get_rook(to, this->mainBoard);
-        rRay &= this->mainBoard;
-        while (rRay) {
-            lsb = bitboardHelpers::getLSB(rRay);
-            lsbBB = (oneBB << lsb);
-            // Check if it is a Rook or Queen that has
-            // been blocked and remove it from the attacks board.
-            if(lsbBB & whiteBoards[3]){
-                popBit(whiteAttacks[3], RookAttackMasks[to][0]);
-                whiteAttacks[3] |= get_rook(lsb, this->mainBoard);
-            }
-            if(lsbBB & whiteBoards[4]){
-                popBit(whiteAttacks[4], RookAttackMasks[to][0]);
-                whiteAttacks[4] |= get_rook(lsb, this->mainBoard);
-            }
-            if(lsbBB & blackBoards[3]){
-                popBit(blackAttacks[3], RookAttackMasks[to][0]);
-                blackAttacks[3] |= get_rook(lsb, this->mainBoard);
-            }
-            if(lsbBB & blackBoards[4]){
-                popBit(blackAttacks[4], RookAttackMasks[to][0]);
-                blackAttacks[4] |= get_rook(lsb, this->mainBoard);
-            }
-        }
-        blackAttack = (blackAttacks[0] | blackAttacks[1] | blackAttacks[2] | blackAttacks[3] | blackAttacks[4] | blackAttacks[5]);
-        whiteAttack = (whiteAttacks[0] | whiteAttacks[1] | whiteAttacks[2] | whiteAttacks[3] | whiteAttacks[4] | whiteAttacks[5]);
-        if (this->debug) {
-            //printBitBoard(whiteAttack);
-        }
-    }
-
 // Generates all of the attack bitboards for all pieces 
 // of the side to move.
 void Game::genAttacks(){
@@ -454,7 +161,8 @@ void Game::genAttacks(){
     Bitboard * friendlyBoards, *enemyBoards;
     int lsb;
 
-    // Generate Pawn attacks
+    // Load all boards depending on side to move.
+    // Dereference pointers to reduce code duplication.
     attackBoard = 0;
     if (this->turn) {
         friendlyBoard = blackBoard;
@@ -467,6 +175,9 @@ void Game::genAttacks(){
         enemyBoard = blackBoard;
         enemyBoards = blackBoards;
     }
+
+    // Generate Pawn attacks
+    // Split into not A and not H file to avoid wrap around attacks.
     Bitboard pawnsNotAFile = friendlyBoards[0] & (~myEngine::FileABB);
     Bitboard pawnsNotHFile = friendlyBoards[0] & (~myEngine::FileHBB);
     
@@ -480,7 +191,8 @@ void Game::genAttacks(){
         whiteAttacks[0] =(attackBoard);
     }     
 
-    // Generate Knight attacks
+    // Generate Knight attacks using precomputed bit mask 
+    // of attacks for each square.
     attackBoard = 0;
     Bitboard knightBoard = friendlyBoards[1];
     while (knightBoard) {
@@ -493,7 +205,8 @@ void Game::genAttacks(){
         whiteAttacks[1] = attackBoard;
     }
 
-    // Generate Bishop attacks
+    // Generate Bishop attacks using magic bitboards.
+    // Magic bitboards are accessed through the get_bishop function.
     attackBoard = 0;
     Bitboard bishopBoard = friendlyBoards[2];
     while (bishopBoard != 0) {
@@ -506,7 +219,8 @@ void Game::genAttacks(){
         whiteAttacks[2] = attackBoard;
     }
 
-    // Generate Rook attacks
+    // Generate Rook attacks using magic bitboards.
+    // Magic bitboards are accessed through the get_rook function.
     attackBoard = 0;
     Bitboard rookBoard = friendlyBoards[3];
     while (rookBoard != 0) {
@@ -519,7 +233,7 @@ void Game::genAttacks(){
         whiteAttacks[3] = attackBoard;
     }
 
-    // Generate Queen attacks
+    // Generate Queen attacks by combining rook and bishop attacks.
     attackBoard = 0;
     Bitboard queenBoard = friendlyBoards[4];
     while (queenBoard != 0) {
@@ -533,7 +247,8 @@ void Game::genAttacks(){
         whiteAttacks[4] = attackBoard;
     }
 
-    //Generate King attacks
+    // Generate King attacks using precomputed bit mask
+    // of attacks for each square.
     attackBoard = 0;
     Bitboard kingBoard = friendlyBoards[5];
     lsb = bitboardHelpers::getLSB(kingBoard);
@@ -545,6 +260,7 @@ void Game::genAttacks(){
     }
     attackBoard = 0;
     
+    // Combine all attacks into one bitboard for easy checking and check determination.
     if (this->turn) {
         blackAttack = (blackAttacks[0] | blackAttacks[1] | blackAttacks[2] | blackAttacks[3] | blackAttacks[4] | blackAttacks[5]);
     } else {
@@ -554,7 +270,6 @@ void Game::genAttacks(){
 }
 
 // Updates the game state and all boards by the given move.
-// Returns true if the move is illegal (puts own king in check).
 bool Game::makeMove(Move& move){
     this->turn = this->turn ? 0 : 1;
     int from, to;
@@ -566,6 +281,9 @@ bool Game::makeMove(Move& move){
         // and white board by any capture.
         updateBoard(blackBoards[move.type()], from, to);
         int capture = move.capture();
+        // If the move captures a piece, update the capture history and boards.
+        // 7 represents no capture.
+        // 0-6 represent piece indices.
         if (capture != 7) {
             captureHistory.push_back(movesWithoutCapture);
             movesWithoutCapture = 0;
@@ -574,15 +292,13 @@ bool Game::makeMove(Move& move){
                 updateBoard(whiteBoards[6], to);
                 updateBoard(whiteBoards[0], to+8);
             } else {
+                //standard capture
                 popBit(whiteBoards[capture], to);
             }
             
         } else {
             movesWithoutCapture++;
         }
-        
-        
-        
 
         // Check if the move broke any castling rights
         if (canWhiteKingCastle && capture == 3 && to == 7) {
@@ -652,6 +368,9 @@ bool Game::makeMove(Move& move){
         // and white board by any capture.
         updateBoard(whiteBoards[move.type()], from, to);
         int capture = move.capture();
+        // If the move captures a piece, update the capture history and boards.
+        // 7 represents no capture.
+        // 0-6 represent piece indices.
         if (capture != 7) {
             captureHistory.push_back(movesWithoutCapture);
             movesWithoutCapture = 0;
@@ -856,11 +575,17 @@ void Game::unMakeMove(Move& move){
         
 }
 
+// Checks if the king of the given colour is in check.
+// Casts rays out from the king to see if any enemy pieces attack it.
+// Returns true if in check, false otherwise.
 bool Game::inCheck(bool colour) {
     Bitboard kingBB = colour ? blackBoards[5] : whiteBoards[5];
     Bitboard attackBB;
     if (colour) {
         int kingSquare = getLSB(kingBB);
+        //404 indicates no king found, should not happen in a valid game.
+        // Can happen during move searching if line includes king capture
+        // but as position is invalid return true to avoid searching further.
         if (kingSquare == 404) {
             return true;
         }
@@ -918,6 +643,7 @@ bool Game::inCheck(bool colour) {
     }
 }
 
+// Tests if a move invalidates the position by putting own king in check.
 bool Game::isMoveOk(Move& move){
     this->turn = this->turn ? 0 : 1;
     int from = move.fromSquare();
@@ -991,7 +717,11 @@ bool Game::isMoveOk(Move& move){
     return flag;
 }
 
+
+// Receives a move in UCI format, converts it to a Move object
+// and makes the move if it is legal.
 void Game::recieveMove(std::string moveStr){
+    // Loads all necessary variables to create a Move object.
     std::string strInitsquare = moveStr.substr(0, 2);
     std::string strTargetSquare = moveStr.substr(2, 4);
     Square initSquare = squareToInt(strInitsquare);
@@ -1003,8 +733,12 @@ void Game::recieveMove(std::string moveStr){
     uint8_t promotion = 0;
     bool passantable = 0;
     int castle = 0;
+
+    // If the initial square contains a white piece.
     if (whiteBoard & (uint64_t(1) << initSquare)){
         colour = 0;
+
+        // Test is the move is a promotion or double pawn push.
         type = getPieceBySquare(uint64_t(1) << initSquare, 0);
         if (type == 0){
             if (targetSquare/8 == 7) {
@@ -1014,6 +748,7 @@ void Game::recieveMove(std::string moveStr){
                 passantable = true;
             }
         }
+        // Test if the move is a castle and which type.
         if (type == 5) {
             int diff = targetSquare - initSquare;
             if (diff == -2) {
@@ -1022,11 +757,13 @@ void Game::recieveMove(std::string moveStr){
                 castle = 1;
             }
         }
+        // Check if the target square contains an enemy piece for capture.
         if ((blackBoard & (uint64_t(1) << targetSquare)) || (blackBoards[6] & (uint64_t(1) << targetSquare)) ){
             capture = getPieceBySquare((uint64_t(1) << targetSquare), 1);
         }
     } else if (blackBoard & (uint64_t(1) << initSquare)){
         colour = 1;
+        // Test is the move is a promotion or double pawn push.
         type = getPieceBySquare(uint64_t(1) << initSquare, 1);
         if (type == 0){
             if (targetSquare/8 == 0) {
@@ -1036,6 +773,7 @@ void Game::recieveMove(std::string moveStr){
                 passantable = true;
             }
         }
+        // Test if the move is a castle and which type.
         if (type == 5) {
             int diff = targetSquare - initSquare;
             if (diff == -2) {
@@ -1044,6 +782,7 @@ void Game::recieveMove(std::string moveStr){
                 castle = 1;
             }
         }
+        // Check if the target square contains an enemy piece for capture.
         if ((whiteBoard & (uint64_t(1) << targetSquare)) || (whiteBoards[6] & (uint64_t(1) << targetSquare))){
             capture = getPieceBySquare((uint64_t(1) << targetSquare), 0);
         }
@@ -1051,12 +790,14 @@ void Game::recieveMove(std::string moveStr){
         printf("Input a valid move\n");
         return;
     }
+    // Set the flag for the move, utilised in makeMove to efficiently determine special moves.
     uint8_t flag = 0;
     if (promotion != 0) {
         flag = 1;
     } else if (castle != 0) {
         flag = castle + 1;
     }
+    // Create the Move object and test if it is legal.
     Move newMove = Move(initSquare, targetSquare, promotion, flag, type, capture, colour, passantable);
     if (isMoveOk(newMove)){
         printf("Input a valid move\n");
@@ -1065,6 +806,8 @@ void Game::recieveMove(std::string moveStr){
     this->makeMove(newMove);
 }
 
+
+// Initializes the Zobrist hash for the current position.
 void Game::initHash() {
     for (int i = 0; i < 781; i++) {
         hashes[i] = getRandomU64();
@@ -1099,6 +842,7 @@ void Game::initHash() {
     }
 };
 
+// Updates the Zobrist hash by the given move.
 void Game::updateHash(Move& move) {
     if (move.colour()) {
         hash = hash ^ hashes[blackOffset + move.type() * 64 + move.fromSquare()];

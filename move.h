@@ -21,6 +21,8 @@ using Square = int;
 // 0100 broke white king castle
 // 1000 broke white queen castle
 
+// value integer is for move ordering heuristics in search algorithms
+
 class Move {
     protected:
         uint32_t data;

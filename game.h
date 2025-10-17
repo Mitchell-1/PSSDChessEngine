@@ -41,7 +41,6 @@ class Game {
         void updateMainBoards();
         int getPieceBySquare(Bitboard, int) const;
         void genAttacks();
-        void updateAttacks(Move move);
         bool makeMove(Move& move);
         void unMakeMove(Move& move);
         bool inCheck(bool colour);
@@ -50,6 +49,8 @@ class Game {
         void initHash();
         void updateHash(Move& move);
         std::vector<int> moveHistory;
+        
+        // Precomputed castling bitboards and rights
         Bitboard whiteKingCastle = 112;
         Bitboard WhiteKingRook = 160;
         bool canWhiteKingCastle = false;

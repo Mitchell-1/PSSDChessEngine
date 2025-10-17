@@ -15,7 +15,11 @@ struct TTEntry {
 
 class TranspositionTable {
 public:
+    // Enable or disable the transposition table.
     bool enabled = true;
+
+    // Constants for lookup results.
+    // Moves are evaluated in multiples of 5 at the minimum so +- 4 is safe.
     const int failedLookup = -2;
     const int exactScore = -1;
     const int lowerBound = -3;
@@ -32,6 +36,8 @@ public:
         return table[hash % size];
     }
 
+    // Lookup a position in the transposition table.
+    // Returns the stored score if found and valid, otherwise returns failedLookup.
     int lookupHash(uint64_t hash, int depth, int alpha, int beta) {
         if (!enabled) {
             return failedLookup;
@@ -53,12 +59,16 @@ public:
         }
         return failedLookup;
     }
-
+    // Store a position in the transposition table.
     void storeHash(uint64_t hash, int depth, int flag, int score) {
+        if (!enabled) {
+            return;
+        }
         TTEntry entry = TTEntry(hash, depth, flag, score);
         table[hash % size] = entry;
     }
 
+    // Copy constructor
     void operator=(const TranspositionTable &other) {
         if (this != &other) {
             delete[] table;

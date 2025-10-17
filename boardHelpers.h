@@ -1,7 +1,11 @@
-#pragma once
+#ifndef BOARDHELPERS_H
+#define BOARDHELPERS_H
+
 #include <iostream>
 #include "helpers.h"
 
+
+// De Bruijn sequence table for bit scanning
 const int index64[64] = {
     0, 47,  1, 56, 48, 27,  2, 60,
    57, 49, 41, 37, 28, 16,  3, 61,
@@ -49,6 +53,7 @@ namespace bitboardHelpers {
         board ^= bit;
         board |= bit;
     }
+    
     // Returns the index (0-63) of the least significant bit and pops it from the bitboard
     // Uses De Bruijn sequence to do so in constant time, avoiding looping over the board.
     constexpr Square getLSB(Bitboard& board) {
@@ -79,3 +84,5 @@ namespace bitboardHelpers {
     }
 
 };
+
+#endif

@@ -14,6 +14,8 @@ Bitboard myEngine::strToBitBoard(char file, char rank) {
     return ranknum*8 + fileNum;
 }
 
+// Prints a bitboard to the console in an 8x8 format
+// with ranks and files labelled.
 void myEngine::printBitBoard(Bitboard bitboard){
     std::vector<char> files = {'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'};
     //std::cout << std::bitset<64>(this->board) << std::endl;
@@ -34,7 +36,8 @@ void myEngine::printBitBoard(Bitboard bitboard){
     printf("\n    a b c d e f g h\n");
 }
 
-
+// Converts a standard square notation (e.g. e4) into
+// an integer value (0-63).
 int myEngine::squareToInt(std::string square){
     std::string files1 = "abcdefgh";
     char file = square[0];
@@ -43,6 +46,7 @@ int myEngine::squareToInt(std::string square){
     return rank*8 + fileNum;
 }
 
+// Prints the details of a Move object to the console
 void myEngine::printMove(Move move){
     const char * colour = move.colour() ? "Black  " : "White  ";
     switch (move.type())
@@ -70,6 +74,7 @@ void myEngine::printMove(Move move){
     }
 }
 
+// Returns the piece-square table for the given piece and colour.
 const int *myEngine::getPiecePositionTable(int piece, bool colour, bool endgame){
     const int *positionTable = nullptr;
     switch (piece){
