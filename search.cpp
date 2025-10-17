@@ -57,6 +57,7 @@ namespace search_impl {
             return ScoredMove{bestScore, 0}; // no captures, return evaluation
         }
         int score;
+        int evalBound = TTable.upperBound;
         // minimax algorithm over capture moves only.
         // Uses alpha beta pruning to cut off branches that won't affect the final decision.
         for (const Move *it = moves.begin(); it != moves.end(); ++it){
@@ -73,26 +74,30 @@ namespace search_impl {
                 // Position not found in table, continue quiescence search.
                 // Store result in transposition table.
                 score = quiescence(game, alpha, beta, extensions + 1, depthFromRoot + 1).score;
-                TTable.storeHash(game.hash, extensions, TTable.exactScore, score);
+                
             }
             game.unMakeMove(m);
             game.hash = tempHash;
             if (game.turn) {
                 if (score < bestScore) {
                     bestScore = score;
+
                 }
                 beta = std::min(beta, bestScore);
             } else {
                 if (score > bestScore) {
                     bestScore = score;
+                    evalBound = TTable.upperBound;
                 }
                 alpha = std::max(alpha, bestScore);
             }
             if (alpha >= beta) {
                 cutoffs++;
+                TTable.storeHash(game.hash, extensions, TTable.lowerBound, score);
                 break; // cut-off
             }
-    }
+    }   
+        TTable.storeHash(game.hash, extensions, TTable.exactScore, bestScore);
         return {bestScore, 0};
     }
     
@@ -179,13 +184,13 @@ namespace search_impl {
             // alpha-beta cutoff
             if (alpha >= beta){
                 // Position w
-                TTable.storeHash(game.hash, depth + 1, TTable.lowerBound, alpha);
+                TTable.storeHash(game.hash, depth, TTable.lowerBound, alpha);
                 cutoffs++;
                 break;
             }
             
         }
-        TTable.storeHash(game.hash, depth + 1, evalBound, best.score);
+        TTable.storeHash(game.hash, depth, evalBound, best.score);
         return best;
     }
 
@@ -215,7 +220,7 @@ Move Search::FindBestMove(Game &game, int depthMax) {
     if (depthMax <= 0) {
         return Move();
     }
-    search_impl::maxExtension = 3; // set max extension to depth to avoid infinite extensions
+    search_impl::maxExtension = 6; // set max extension to depth to avoid infinite extensions
 
     uint64_t nodes, co, hashHits;
     auto start = std::chrono::high_resolution_clock::now();
